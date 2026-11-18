@@ -63,20 +63,15 @@ export function spineSize(it) {
 
 // ----- Búsqueda de títulos -----
 // Libros: Open Library (gratis, sin clave). Pelis y series: TMDB (cuando tengamos la clave).
-export async function searchTitles(kind, q) {
-  if (!q || q.trim().length < 3) return []
+export async function searchTitles(kind, q, author = '') {
+  q = (q || '').trim(); author = (author || '').trim()
+  if (q.length < 3 && author.length < 3) return []
   if (kind === 'book') {
-    const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&fields=key,title,author_name,first_publish_year,cover_i,number_of_pages_median&limit=6`
-    const r = await fetch(url)
-    if (!r.ok) return []
-    const j = await r.json()
-    return (j.docs || []).map((d) => ({
-      title: d.title,
-      creator: (d.author_name || [])[0] || '',
-      year: d.first_publish_year || null,
-      pages: d.number_of_pages_median || null,
-      cover_url: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
-    }))
+    let res = []
+    try { res = await googleBooks(q, author, true) } catch {}
+    if (res.length < 3) { try { res = dedupe([...res, ...(await googleBooks(q, author, false))]) } catch {} }
+    if (res.length < 3) { try { res = dedupe([...res, ...(await openLibrary(q, author))]) } catch {} }
+    return res.slice(0, 6)
   }
   const key = import.meta.env.VITE_TMDB_KEY
   if (!key) return []
@@ -90,6 +85,45 @@ export async function searchTitles(kind, q) {
     creator: '',
     year: parseInt((d.release_date || d.first_air_date || '').slice(0, 4)) || null,
     cover_url: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
+  }))
+}
+
+const norm = (x) => (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
+function dedupe(list) {
+  const seen = new Set()
+  return list.filter((r) => { const k = norm(r.title) + '|' + norm(r.creator).split(' ').pop(); if (seen.has(k)) return false; seen.add(k); return true })
+}
+async function googleBooks(q, author, spanish) {
+  const parts = []
+  if (q) parts.push(`intitle:${q}`)
+  if (author) parts.push(`inauthor:${author}`)
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parts.join(' '))}&maxResults=12&printType=books${spanish ? '&langRestrict=es' : ''}`
+  const r = await fetch(url)
+  if (!r.ok) return []
+  const j = await r.json()
+  const out = (j.items || []).map(({ volumeInfo: v }) => ({
+    title: v.subtitle && v.title.length < 18 ? `${v.title}: ${v.subtitle}` : v.title,
+    creator: (v.authors || [])[0] || '',
+    year: parseInt((v.publishedDate || '').slice(0, 4)) || null,
+    pages: v.pageCount || null,
+    cover_url: v.imageLinks?.thumbnail ? v.imageLinks.thumbnail.replace('http://', 'https://').replace('&edge=curl', '') : null,
+  }))
+  // primero los que tienen tapa y coinciden mejor con el título
+  const nq = norm(q)
+  out.sort((a, b) => (norm(b.title).startsWith(nq) - norm(a.title).startsWith(nq)) || (!!b.cover_url - !!a.cover_url))
+  return dedupe(out)
+}
+async function openLibrary(q, author) {
+  const params = new URLSearchParams({ fields: 'key,title,author_name,first_publish_year,cover_i,number_of_pages_median', limit: '8' })
+  if (q) params.set('title', q)
+  if (author) params.set('author', author)
+  const r = await fetch(`https://openlibrary.org/search.json?${params}`)
+  if (!r.ok) return []
+  const j = await r.json()
+  return (j.docs || []).map((d) => ({
+    title: d.title, creator: (d.author_name || [])[0] || '', year: d.first_publish_year || null,
+    pages: d.number_of_pages_median || null,
+    cover_url: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
   }))
 }
 

@@ -21,14 +21,16 @@ export function AddSheet({ ctx, onClose, edit }) {
   const [sugs, setSugs] = useState([])
   const [picked, setPicked] = useState(!!edit)
   const [busy, setBusy] = useState(false)
+  const [searching, setSearching] = useState(false)
   const [done, setDone] = useState(null)
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
 
   useEffect(() => {
-    if (picked || q.trim().length < 3) { setSugs([]); return }
-    const t = setTimeout(() => searchTitles(kind, q).then(setSugs).catch(() => setSugs([])), 350)
+    if (picked || (q.trim().length < 3 && (f.creator || '').trim().length < 3)) { setSugs([]); return }
+    setSearching(true)
+    const t = setTimeout(() => searchTitles(kind, q, f.creator).then(setSugs).catch(() => setSugs([])).finally(() => setSearching(false)), 450)
     return () => clearTimeout(t)
-  }, [q, kind, picked])
+  }, [q, f.creator, kind, picked])
 
   function pick(s) { setF((x) => ({ ...x, ...s })); setQ(s.title); setPicked(true); setSugs([]) }
   const item = { ...f, kind, title: q.trim() }
@@ -73,10 +75,11 @@ export function AddSheet({ ctx, onClose, edit }) {
         <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
           <div className="light" style={{ marginBottom: 6 }}>Título</div>
           <input className="input" style={{ fontSize: 18 }} value={q} autoFocus={!edit} onChange={(e) => { setQ(e.target.value); setPicked(false) }} placeholder={kind === 'book' ? 'Rayuela' : kind === 'movie' ? 'Aftersun' : 'The Bear'} />
-          <input className="input" style={{ marginTop: 8, fontSize: 13, padding: '9px 12px' }} value={f.creator || ''} onChange={(e) => set('creator', e.target.value)} placeholder={`${KINDS[kind].creator} · ${picked ? '' : 'se completa solo'}`} />
+          <input className="input" style={{ marginTop: 8, fontSize: 13, padding: '9px 12px' }} value={f.creator || ''} onChange={(e) => { set('creator', e.target.value); if (!f.cover_url) setPicked(false) }} placeholder={kind === 'book' ? 'Autor/a · ayuda a encontrarlo' : `${KINDS[kind].creator}`} />
+          {searching && !sugs.length && <div className="light" style={{ marginTop: 6, letterSpacing: '.1em' }}>Buscando…</div>}
           {picked && f.cover_url && <div className="row" style={{ marginTop: 6, fontSize: 12.5, gap: 8 }}><b>✓ Encontramos {kind === 'book' ? 'la tapa' : 'el afiche'}</b><button className="linkbtn" style={{ fontWeight: 300, fontSize: 12.5 }} onClick={() => set('cover_url', null)}>sacar</button></div>}
           {sugs.length > 0 && (
-            <div style={{ position: 'absolute', left: -90, right: 0, top: 54, background: '#fff', borderRadius: 16, padding: 6, boxShadow: '0 0 0 1.5px var(--ink), 0 16px 30px -12px rgba(0,0,0,.4)', zIndex: 5 }}>
+            <div style={{ position: 'absolute', left: -90, right: 0, top: 102, background: '#fff', borderRadius: 16, padding: 6, boxShadow: '0 0 0 1.5px var(--ink), 0 16px 30px -12px rgba(0,0,0,.4)', zIndex: 5 }}>
               {sugs.map((s, i) => (
                 <button key={i} onClick={() => pick(s)} className="row" style={{ width: '100%', border: 0, background: 'none', padding: '8px 10px', borderRadius: 12, textAlign: 'left' }}>
                   <Cover it={{ ...s, kind }} w={30} />
