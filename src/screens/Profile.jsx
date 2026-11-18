@@ -29,9 +29,9 @@ export function Profile({ ctx }) {
           </button>
         ))}
       </div>
-      <button onClick={() => ctx.go('tecoins')} className="row" style={{ width: 'calc(100% - 40px)', margin: '10px 20px 0', padding: '12px 14px', background: 'var(--ink)', color: '#fff', borderRadius: 18, border: 0, textAlign: 'left', gap: 12 }}>
+      <button onClick={() => ctx.go('shop')} className="row" style={{ width: 'calc(100% - 40px)', margin: '10px 20px 0', padding: '12px 14px', background: 'var(--ink)', color: '#fff', borderRadius: 18, border: 0, textAlign: 'left', gap: 12 }}>
         <span className="row" style={{ gap: 7, fontWeight: 800, fontSize: 26, color: 'var(--lim)', letterSpacing: '-0.04em' }}><Coin s={26} ring="#E6F04A" />{ctx.coins}</span>
-        <span style={{ flex: 1 }} className="light"><span style={{ color: '#fff' }}>Tecoins · cómo se suman</span></span>
+        <span style={{ flex: 1 }} className="light"><span style={{ color: '#fff' }}>Tecoins · canjear</span></span>
         <span style={{ transform: 'rotate(180deg)', display: 'flex' }}><Icon n="back" s={16} c="#E6F04A" w={2.4} /></span>
       </button>
       <div className="between pad" style={{ paddingTop: 20, alignItems: 'baseline' }}><h2 className="h" style={{ fontSize: 24 }}>Guardados</h2><span className="light">para después · {ctx.saved.length}</span></div>
@@ -150,7 +150,7 @@ export function Tecoins({ ctx }) {
         <TG ic="clap" t="Pelis"><TRow t="Estreno" sub="Salió hace menos de un año" n={COINS.movieNew} /><TRow t="De catálogo" sub="Salió hace más de un año" n={COINS.movieCatalog} /></TG>
         <TG ic="tv" t="Series"><TRow t="Serie corta" sub="De 1 a 3 temporadas" n={COINS.showShort} /><TRow t="Serie larga" sub="4 temporadas o más" n={COINS.showLong} /></TG>
         <TG ic="plus" t="Extras"><TRow t="La viste en el cine" sub="Tiene que estar en cartelera" n={COINS.cinema} plus /><TRow t="Saga completa" sub="Todos los libros, pelis o temporadas" n={COINS.saga} plus /><TRow t="Dejaste una reseña" sub="Lo que opinás, para tus amigos" n={COINS.review} plus /></TG>
-        <p className="body muted" style={{ fontSize: 13, marginTop: 16 }}>Muy pronto vas a poder canjearlos por decoraciones para tu estante.</p>
+        <div style={{ marginTop: 18 }}><button className="btn" onClick={() => ctx.go('shop')}>Canjear por decoraciones</button></div>
       </div>
     </div>
   )
@@ -187,7 +187,7 @@ export function GiftSheet({ coins, from, onClose }) {
         <div className="tape" style={{ fontSize: 12, padding: '6px 10px' }}>UN REGALO</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 800, fontSize: 46, letterSpacing: '-0.05em', marginTop: 18 }}>+{coins} <Coin s={42} /></div>
         <h2 className="h" style={{ fontSize: 28, marginTop: 14 }}>{from && from !== 'Alguien' ? `¡${from} te regaló ${coins} tecoins!` : `¡Te regalaron ${coins} tecoins!`}</h2>
-        <p className="body" style={{ marginTop: 8 }}>Ya están en tu cuenta. Muy pronto vas a poder canjearlos por decoraciones para tu estante.</p>
+        <p className="body" style={{ marginTop: 8 }}>Ya están en tu cuenta. Canjealos por decoraciones para tu estante desde tu perfil.</p>
         <div style={{ marginTop: 22 }}><button className="btn" onClick={onClose}>¡Gracias!</button></div>
       </div>
     </Sheet>

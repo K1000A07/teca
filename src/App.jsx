@@ -9,6 +9,7 @@ import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
 import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
 import { AdminApp } from './screens/Admin.jsx'
+import { Shop } from './screens/Arrange.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
@@ -32,6 +33,8 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')
   const [tour, setTour] = useState(false)
+  const [decos, setDecos] = useState([])
+  const [hideNav, setHideNav] = useState(false)
 
   const uid = session?.user?.id
   const view = stack[stack.length - 1]
@@ -55,11 +58,13 @@ export default function App() {
 
   const loadAll = useCallback(async () => {
     if (!uid) return
-    const [mine, fr, sv] = await Promise.all([
+    const [mine, fr, sv, dc] = await Promise.all([
       sb.from('items').select('*').eq('user_id', uid).order('position', { ascending: true, nullsFirst: false }).order('created_at'),
       sb.from('friendships').select('*').or(`requester.eq.${uid},addressee.eq.${uid}`),
       sb.from('saved').select('item_id, created_at, items(*)').eq('user_id', uid).order('created_at', { ascending: false }),
+      sb.from('user_decos').select('*').eq('user_id', uid),
     ])
+    setDecos(dc.data || [])
     setItems(mine.data || [])
     const fs = fr.data || []
     setFriendships(fs)
@@ -98,13 +103,13 @@ export default function App() {
   const back = useCallback(() => setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)), [])
   useEffect(() => { const f = () => { setSheet(null); setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)) }; window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f) }, [])
 
-  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0) + (profile?.bonus_coins || 0), [items, profile?.bonus_coins])
+  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0) + (profile?.bonus_coins || 0) - decos.reduce((a, d) => a + (d.price || 0), 0), [items, profile?.bonus_coins, decos])
   const friends = useMemo(() => friendships.filter((f) => f.status === 'accepted').map((f) => people[f.requester === uid ? f.addressee : f.requester]).filter(Boolean), [friendships, people, uid])
   const incoming = useMemo(() => friendships.filter((f) => f.status === 'pending' && f.addressee === uid), [friendships, uid])
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
 
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')
@@ -117,13 +122,13 @@ export default function App() {
     lib: <Home ctx={ctx} />, friends: <Friends ctx={ctx} />, clubs: <Clubs ctx={ctx} />, rank: <Ranking ctx={ctx} />, me: <Profile ctx={ctx} />,
     friend: <FriendTeca ctx={ctx} person={view.person} />, news: <Notifications ctx={ctx} />,
     settings: <Settings ctx={ctx} />, privacy: <Privacy ctx={ctx} />, policy: <Policy ctx={ctx} />, tecoins: <Tecoins ctx={ctx} />,
-    install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />,
+    install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, shop: <Shop ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />,
   }
   const root = stack[0].s
   return (
     <div className="app">
       {screens[view.s] || screens.lib}
-      {stack.length === 1 && <Nav tab={root} go={tab} onAdd={() => setSheet({ t: 'add' })} dots={{ friends: hasNews }} />}
+      {stack.length === 1 && !hideNav && <Nav tab={root} go={tab} onAdd={() => setSheet({ t: 'add' })} dots={{ friends: hasNews }} />}
       {sheet?.t === 'add' && <AddSheet ctx={ctx} onClose={() => setSheet(null)} />}
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}

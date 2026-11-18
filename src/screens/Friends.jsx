@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
-import { Avatar, Back, Cover, Icon, Sheet, Shelf, Stars, Teca, useWidth } from '../ui.jsx'
+import { Avatar, Back, Cover, Icon, Sheet, Stars, Teca, useWidth } from '../ui.jsx'
+import { Shelf, buildEntries } from '../shelf.jsx'
 import { KINDS, timeAgo } from '../lib.js'
 import { TopBar, TecaTabs, useSwipe } from './Home.jsx'
 import { Review } from './Detail.jsx'
@@ -115,6 +116,8 @@ export function FriendTeca({ ctx, person }) {
   const w = useWidth()
   const [kind, setKind] = useState('book')
   const [items, setItems] = useState(null)
+  const [decos, setDecos] = useState([])
+  useEffect(() => { sb.from('user_decos').select('*').eq('user_id', person.id).then(({ data }) => setDecos(data || [])) }, [person.id])
   useEffect(() => { sb.from('items').select('*').eq('user_id', person.id).order('position', { ascending: true, nullsFirst: false }).order('created_at').then(({ data }) => setItems(data || [])) }, [person.id])
   const swipe = useSwipe(kind, setKind)
   const list = (items || []).filter((i) => i.kind === kind)
@@ -135,7 +138,7 @@ export function FriendTeca({ ctx, person }) {
       </div>
       <TecaTabs kind={kind} setKind={setKind} />
       <div style={{ height: 14 }} />
-      {items && <Shelf items={list} kind={kind} width={w} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onAdd={() => {}} />}
+      {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
     </div>
   )
 }
