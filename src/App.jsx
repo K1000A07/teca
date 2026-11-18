@@ -8,6 +8,7 @@ import { Detail } from './screens/Detail.jsx'
 import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
 import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
+import { AdminApp } from './screens/Admin.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
@@ -100,6 +101,8 @@ export default function App() {
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
+  const isAdminPage = location.pathname.startsWith('/admin')
+  if (isAdminPage && session !== undefined && !(session && profile === undefined)) return session ? <><AdminApp session={session} profile={profile} say={say} /><Toast msg={toast} /></> : <div className="app"><Login say={say} /><Toast msg={toast} /></div>
   if (intro || session === undefined || (session && profile === undefined)) return <Intro />
   if (!session) return <div className="app"><Login say={say} /><Toast msg={toast} /></div>
   if (!profile) return <div className="app"><ProfileSetup ctx={ctx} /><Toast msg={toast} /></div>

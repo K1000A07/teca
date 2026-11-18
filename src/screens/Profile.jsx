@@ -197,6 +197,10 @@ export function GiftSheet({ coins, onClose }) {
 const slug = (t) => (t || 'regalo').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'regalo'
 
 export function Gifts({ ctx }) {
+  return <div><Back onBack={ctx.back} title="Links de regalo" /><GiftsPanel uid={ctx.uid} say={ctx.say} /></div>
+}
+
+export function GiftsPanel({ uid, say, wide }) {
   const [list, setList] = useState(null)
   const [note, setNote] = useState('')
   const [coins, setCoins] = useState(50)
@@ -208,28 +212,28 @@ export function Gifts({ ctx }) {
   async function copy(c) {
     const url = link(c)
     if (navigator.share) { try { await navigator.share({ title: 'teca', text: `Te regalo tecoins para que arranques tu teca`, url }); return } catch {} }
-    await navigator.clipboard.writeText(url); ctx.say('Link copiado')
+    await navigator.clipboard.writeText(url); say('Link copiado')
   }
   async function create(e) {
     e.preventDefault(); setBusy(true)
     const code = `${slug(note)}-${Math.random().toString(36).slice(2, 6)}`
-    const { error } = await sb.from('invites').insert({ code, coins, max_uses: uses, note: note.trim() || null, created_by: ctx.uid })
+    const { error } = await sb.from('invites').insert({ code, coins, max_uses: uses, note: note.trim() || null, created_by: uid })
     setBusy(false)
-    if (error) return ctx.say('No se pudo crear: ' + error.message)
+    if (error) return say('No se pudo crear: ' + error.message)
     setNote(''); load(); copy(code)
   }
   async function del(c) { if (!confirm('¿Borrar este link? Ya no se va a poder usar.')) return; await sb.from('invites').delete().eq('code', c); load() }
   return (
-    <div>
-      <Back onBack={ctx.back} title="Links de regalo" />
-      <form className="pad" onSubmit={create}>
+    <div style={wide ? { display: 'grid', gridTemplateColumns: 'minmax(0, 380px) minmax(0, 1fr)', gap: 40, alignItems: 'start' } : undefined}>
+      <form className={wide ? '' : 'pad'} onSubmit={create}>
         <p className="body" style={{ fontSize: 14 }}>Quien entre por el link y cree su cuenta recibe los tecoins al armar su perfil. Solo vale para cuentas nuevas, una vez por persona.</p>
         <label className="field"><span className="light">Para quién · solo lo ves vos</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Juli" /></label>
         <div className="field"><span className="light">Tecoins</span><div className="row" style={{ gap: 6 }}>{[20, 50, 100, 200].map((n) => <button type="button" key={n} className={`chip ${coins === n ? 'lim' : ''}`} onClick={() => setCoins(n)}><Coin s={14} />{n}</button>)}</div></div>
         <div className="field"><span className="light">¿Cuántas personas lo pueden usar?</span><div className="row" style={{ gap: 6 }}>{[1, 5, 10, 50].map((n) => <button type="button" key={n} className={`chip ${uses === n ? 'on' : ''}`} onClick={() => setUses(n)}>{n === 1 ? '1 persona' : n}</button>)}</div></div>
         <div style={{ marginTop: 18 }}><button className="btn" disabled={busy}>{busy ? 'Creando…' : 'Crear y copiar link'}</button></div>
       </form>
-      <div className="pad light" style={{ marginTop: 26 }}>Tus links</div>
+      <div>
+      <div className={wide ? 'light' : 'pad light'} style={{ marginTop: wide ? 0 : 26 }}>Tus links</div>
       {list === null && <p className="pad body muted">Cargando…</p>}
       {list?.map((g) => (
         <div key={g.code} className="listrow" style={{ alignItems: 'flex-start' }}>
@@ -245,6 +249,7 @@ export function Gifts({ ctx }) {
         </div>
       ))}
       {list?.length === 0 && <p className="pad body muted" style={{ fontSize: 14 }}>Todavía no creaste ninguno.</p>}
+      </div>
     </div>
   )
 }
