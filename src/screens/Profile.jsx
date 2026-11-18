@@ -3,6 +3,7 @@ import { sb } from '../supabase.js'
 import { Avatar, Back, Coin, CoinPill, Cover, Icon } from '../ui.jsx'
 import { COINS, KINDS } from '../lib.js'
 import { ProfileForm } from './Auth.jsx'
+import { InstallContent, isStandalone } from './Tutorial.jsx'
 
 export function Profile({ ctx }) {
   const [filter, setFilter] = useState('all')
@@ -72,7 +73,7 @@ export function Settings({ ctx }) {
       <div className="pad">
         <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /></Group>
         <Group t="Privacidad"><Row t="Quién ve qué" v="Amigos" onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
-        <Group t="La app"><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
+        <Group t="La app"><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
         <div style={{ marginTop: 22 }}><button className="btn white" onClick={() => sb.auth.signOut()}>Cerrar sesión</button></div>
       </div>
     </div>
@@ -155,28 +156,10 @@ export function Tecoins({ ctx }) {
 }
 
 export function Install({ ctx }) {
-  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
-  const [os, setOs] = useState(ios ? 0 : 1)
-  const steps = os === 0
-    ? [['Tocá compartir', 'En Safari, el botón del cuadrado con la flecha.', 'share', 'Compartir'], ['Elegí “Agregar a inicio”', 'Si no lo ves, deslizá el menú hacia abajo.', 'plussq', 'Agregar a inicio'], ['Tocá “Agregar” y listo', 'teca aparece en tu pantalla con su ícono.']]
-    : [['Abrí el menú', 'En Chrome, los tres puntitos de arriba a la derecha.', 'dots', 'Menú'], ['Elegí “Instalar app”', 'En algunos celus dice “Agregar a la pantalla principal”.', 'install', 'Instalar app'], ['Confirmá y listo', 'teca aparece en tu pantalla con su ícono.']]
   return (
     <div style={{ background: 'var(--cell)', minHeight: '100dvh' }}>
       <Back onBack={ctx.back} title="" />
-      <div className="pad">
-        <div className="row" style={{ gap: 14 }}><img src="/icons/icon-192.png" alt="Ícono de teca" style={{ width: 64, height: 64, borderRadius: 14 }} /><h1 className="h" style={{ fontSize: 28 }}>Tené teca<br />en tu inicio</h1></div>
-        <p className="body" style={{ marginTop: 12 }}>Así se abre como una app, con su ícono y sin pasar por el navegador.</p>
-        <div className="seg" style={{ marginTop: 16 }}>{['iPhone', 'Android'].map((t, i) => <button key={t} className={os === i ? 'on' : ''} onClick={() => setOs(i)} style={{ fontSize: 14 }}>{t}</button>)}</div>
-        <div className="stack" style={{ marginTop: 14 }}>
-          {steps.map(([t, sub, ic, label], i) => (
-            <div key={i} className="card row" style={{ alignItems: 'flex-start', gap: 12 }}>
-              <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'var(--lim)', boxShadow: 'inset 0 0 0 1.5px var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{i + 1}</span>
-              <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 16 }}>{t}</div><div style={{ marginTop: 3, fontWeight: 300, fontSize: 13.5, lineHeight: 1.4 }}>{sub}</div>
-                {ic && <div className="between" style={{ marginTop: 10, padding: '10px 12px', background: 'var(--cell)', borderRadius: 12, fontWeight: 800, fontSize: 14 }}>{label}<Icon n={ic} s={18} w={2} /></div>}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="pad" style={{ paddingBottom: 40 }}>{isStandalone() ? <><h1 className="h" style={{ fontSize: 28 }}>Ya la tenés instalada</h1><p className="body" style={{ marginTop: 10 }}>Estás usando teca como app. Para compartirla, pasales a tus amigos el link y esta misma explicación les aparece al entrar.</p></> : <InstallContent />}</div>
     </div>
   )
 }

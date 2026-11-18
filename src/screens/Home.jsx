@@ -16,7 +16,7 @@ export function TopBar({ title, ctx, coins = true }) {
 
 export function TecaTabs({ kind, setKind }) {
   return (<>
-    <div className="seg" style={{ margin: '8px 20px 0' }}>
+    <div className="seg" data-tour="tabs" style={{ margin: '8px 20px 0' }}>
       {KIND_ORDER.map((k) => <button key={k} className={k === kind ? 'on' : ''} onClick={() => setKind(k)}><Icon n={KINDS[k].icon} s={15} w={2} />{KINDS[k].plural}</button>)}
     </div>
     <div className="pagedots">{KIND_ORDER.map((k) => <span key={k} className={k === kind ? 'on' : ''} />)}</div>

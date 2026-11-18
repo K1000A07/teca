@@ -162,8 +162,8 @@ export function Nav({ tab, go, onAdd, dots = {} }) {
   return (<>
     <div className="fade" />
     <nav className="nav">
-      <div className="pill">{T.map(([k, l]) => <button key={k} className={tab === k ? 'on' : ''} onClick={() => go(k)} aria-label={l}><Icon n={k} />{dots[k] && <span className="ndot" />}</button>)}</div>
-      <button className="add" onClick={onAdd} aria-label="Cargar"><Icon n="plus" s={26} w={2.2} /></button>
+      <div className="pill">{T.map(([k, l]) => <button key={k} data-tour={k} className={tab === k ? 'on' : ''} onClick={() => go(k)} aria-label={l}><Icon n={k} />{dots[k] && <span className="ndot" />}</button>)}</div>
+      <button className="add" data-tour="add" onClick={onAdd} aria-label="Cargar"><Icon n="plus" s={26} w={2.2} /></button>
     </nav>
   </>)
 }

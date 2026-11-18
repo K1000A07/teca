@@ -7,6 +7,7 @@ import { AddSheet } from './screens/Add.jsx'
 import { Detail } from './screens/Detail.jsx'
 import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
+import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile } from './screens/Profile.jsx'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
   const [sheet, setSheet] = useState(null)
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')
+  const [tour, setTour] = useState(false)
 
   const uid = session?.user?.id
   const view = stack[stack.length - 1]
@@ -68,6 +70,9 @@ export default function App() {
 
   useEffect(() => { loadProfile() }, [loadProfile])
   useEffect(() => { if (profile) loadAll() }, [profile, loadAll])
+  useEffect(() => { if (profile && uid && !localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400) }, [profile?.id, uid])
+  const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }) }, [uid])
+  const startTour = useCallback(() => { setStack([{ s: 'lib' }]); setTeca('book'); setTimeout(() => setTour(true), 300) }, [])
 
   // ----- navegación con el botón "atrás" del celu -----
   const go = useCallback((s, params = {}) => { setStack((st) => [...st, { s, ...params }]); history.pushState({}, '') }, [])
@@ -81,7 +86,7 @@ export default function App() {
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
 
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   if (intro || session === undefined || (session && profile === undefined)) return <Intro />
@@ -101,6 +106,8 @@ export default function App() {
       {stack.length === 1 && <Nav tab={root} go={tab} onAdd={() => setSheet({ t: 'add' })} dots={{ friends: hasNews }} />}
       {sheet?.t === 'add' && <AddSheet ctx={ctx} onClose={() => setSheet(null)} />}
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
+      {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
+      {tour && stack.length === 1 && <Tutorial onDone={endTour} />}
       <Toast msg={toast} />
     </div>
   )

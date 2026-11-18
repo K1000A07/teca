@@ -1,0 +1,87 @@
+import { useEffect, useLayoutEffect, useState } from 'react'
+import { Icon, Sheet } from '../ui.jsx'
+
+const STEPS = [
+  { target: 'tabs', title: 'Tres estantes, uno para cada cosa', text: <>Tu biblio<span className="serif">teca</span> para libros, tu filmo<span className="serif">teca</span> para pelis y tu video<span className="serif">teca</span> para series. Deslizá para pasar de una a otra.</>, radius: 99 },
+  { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. Buscamos la tapa solos, y cada cosa que cargás te suma tecoins.', radius: 99 },
+  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario y mirá en qué andan: qué leen, qué ven y qué te recomiendan.', radius: 99 },
+]
+
+export const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
+
+// Chrome en Android avisa cuando la app se puede instalar: guardamos ese aviso para usarlo con un botón
+let deferred = null
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e })
+
+export function Tutorial({ onDone }) {
+  const [i, setI] = useState(0)
+  const [rect, setRect] = useState(null)
+  const step = STEPS[i]
+  useLayoutEffect(() => {
+    const measure = () => { const el = document.querySelector(`[data-tour="${step.target}"]`); setRect(el ? el.getBoundingClientRect() : null) }
+    measure(); window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [step.target])
+  const next = () => (i < STEPS.length - 1 ? setI(i + 1) : onDone())
+  const pad = 6
+  const below = rect && rect.top < window.innerHeight / 2
+  const tipStyle = rect ? (below ? { top: rect.bottom + 24 } : { bottom: window.innerHeight - rect.top + 24 }) : { top: '30%' }
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} role="dialog" aria-modal="true" aria-label="Tutorial">
+      {rect
+        ? <div style={{ position: 'fixed', left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: step.radius, boxShadow: '0 0 0 4px #E6F04A, 0 0 0 9999px rgba(20,18,16,.74)', transition: 'all .35s cubic-bezier(.2,.8,.2,1)', pointerEvents: 'none' }} />
+        : <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,18,16,.74)' }} />}
+      <div style={{ position: 'fixed', left: 'max(24px, calc(50% - 196px))', right: 'max(24px, calc(50% - 196px))', ...tipStyle, background: '#fff', borderRadius: 24, padding: 20, transition: 'all .35s' }}>
+        <div className="between"><span className="light">{i + 1} de {STEPS.length}</span><button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={onDone}>Saltar</button></div>
+        <h2 className="h" style={{ fontSize: 24, marginTop: 10 }}>{step.title}</h2>
+        <p className="body" style={{ margin: '8px 0 0', lineHeight: 1.4 }}>{step.text}</p>
+        <div className="between" style={{ marginTop: 16 }}>
+          <div className="pagedots" style={{ margin: 0 }}>{STEPS.map((_, k) => <span key={k} className={k === i ? 'on' : ''} />)}</div>
+          <button className="chip lim" style={{ padding: '10px 18px', fontSize: 14 }} onClick={next}>{i === STEPS.length - 1 ? 'Empezar' : 'Siguiente'}</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function InstallSteps({ os }) {
+  const steps = os === 0
+    ? [['Tocá compartir', 'En Safari, el botón del cuadrado con la flecha (abajo o arriba, según tu iPhone).', 'share', 'Compartir'], ['Elegí “Agregar a inicio”', 'Si no lo ves, deslizá el menú hacia abajo.', 'plussq', 'Agregar a inicio'], ['Tocá “Agregar” y listo', 'teca aparece en tu pantalla con su ícono.']]
+    : [['Abrí el menú', 'En Chrome, los tres puntitos de arriba a la derecha.', 'dots', 'Menú'], ['Elegí “Instalar app”', 'En algunos celus dice “Agregar a la pantalla principal”.', 'install', 'Instalar app'], ['Confirmá y listo', 'teca aparece en tu pantalla con su ícono.']]
+  return (
+    <div className="stack" style={{ marginTop: 14 }}>
+      {steps.map(([t, sub, ic, label], i) => (
+        <div key={i} className="card row" style={{ alignItems: 'flex-start', gap: 12, background: '#fff' }}>
+          <span style={{ flex: 'none', width: 30, height: 30, borderRadius: '50%', background: 'var(--lim)', boxShadow: 'inset 0 0 0 1.5px var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{i + 1}</span>
+          <div style={{ flex: 1 }}><div style={{ fontWeight: 800, fontSize: 16 }}>{t}</div><div style={{ marginTop: 3, fontWeight: 300, fontSize: 13.5, lineHeight: 1.4 }}>{sub}</div>
+            {ic && <div className="between" style={{ marginTop: 10, padding: '10px 12px', background: 'var(--cell)', borderRadius: 12, fontWeight: 800, fontSize: 14 }}>{label}<Icon n={ic} s={18} w={2} /></div>}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function InstallContent({ onDone }) {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const [os, setOs] = useState(ios ? 0 : 1)
+  const [can, setCan] = useState(!!deferred)
+  useEffect(() => { const f = (e) => { e.preventDefault(); deferred = e; setCan(true) }; window.addEventListener('beforeinstallprompt', f); return () => window.removeEventListener('beforeinstallprompt', f) }, [])
+  async function install() { if (!deferred) return; deferred.prompt(); const r = await deferred.userChoice; deferred = null; setCan(false); if (r.outcome === 'accepted') onDone?.() }
+  return (<>
+    <div className="row" style={{ gap: 14 }}><img src="/icons/icon-192.png" alt="Ícono de teca" style={{ width: 64, height: 64, borderRadius: 14 }} /><h2 className="h" style={{ fontSize: 28 }}>Tené teca<br />en tu inicio</h2></div>
+    <p className="body" style={{ marginTop: 12 }}>Así se abre como una app, con su ícono y sin pasar por el navegador.</p>
+    {can && os === 1 && <div style={{ marginTop: 14 }}><button className="btn" onClick={install}><Icon n="install" s={18} w={2} />Instalar teca</button></div>}
+    <div className="seg" style={{ marginTop: 16 }}>{['iPhone', 'Android'].map((t, i) => <button key={t} className={os === i ? 'on' : ''} onClick={() => setOs(i)} style={{ fontSize: 14 }}>{t}</button>)}</div>
+    <InstallSteps os={os} />
+  </>)
+}
+
+export function InstallSheet({ onClose }) {
+  return (
+    <Sheet onClose={onClose}>
+      <InstallContent onDone={onClose} />
+      <div style={{ marginTop: 18 }}><button className="btn" onClick={onClose}>Listo</button></div>
+      <div style={{ marginTop: 12, textAlign: 'center' }}><button className="linkbtn" style={{ fontWeight: 300 }} onClick={onClose}>Más tarde</button></div>
+    </Sheet>
+  )
+}
