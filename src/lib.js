@@ -67,11 +67,10 @@ export async function searchTitles(kind, q, author = '') {
   q = (q || '').trim(); author = (author || '').trim()
   if (q.length < 3 && author.length < 3) return []
   if (kind === 'book') {
-    let res = []
-    try { res = await googleBooks(q, author, true) } catch {}
-    if (res.length < 3) { try { res = dedupe([...res, ...(await googleBooks(q, author, false))]) } catch {} }
+    const [es, all] = await Promise.all([googleBooks(q, author, true).catch(() => []), googleBooks(q, author, false).catch(() => [])])
+    let res = dedupe([...es, ...all.filter((r) => r.lang === 'es'), ...all])
     if (res.length < 3) { try { res = dedupe([...res, ...(await openLibrary(q, author))]) } catch {} }
-    return res.slice(0, 6)
+    return res.slice(0, 7)
   }
   const key = import.meta.env.VITE_TMDB_KEY
   if (!key) return []
@@ -107,6 +106,7 @@ async function googleBooks(q, author, spanish) {
     year: parseInt((v.publishedDate || '').slice(0, 4)) || null,
     pages: v.pageCount || null,
     cover_url: v.imageLinks?.thumbnail ? v.imageLinks.thumbnail.replace('http://', 'https://').replace('&edge=curl', '') : null,
+    lang: spanish ? 'es' : v.language || null,
   }))
   // primero los que tienen tapa y coinciden mejor con el título
   const nq = norm(q)

@@ -82,7 +82,10 @@ export function Cover({ it, w = 72 }) {
 export function Spine({ it, isNew, onClick }) {
   const { hcm, wcm } = spineSize(it)
   const [bg, fg] = paletteFor(it.title)
-  const st = { width: Math.round(wcm * PPC * 2.2), height: Math.round(hcm * PPC), background: bg, color: fg }
+  const real = it.cover_url
+  const st = real
+    ? { width: Math.round(wcm * PPC * 2.2), height: Math.round(hcm * PPC), backgroundColor: bg, backgroundImage: `linear-gradient(90deg, rgba(0,0,0,.28), rgba(0,0,0,.12) 40%, rgba(0,0,0,.3)), url("${real}")`, backgroundSize: 'auto 100%', backgroundPosition: '6% center', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.7)' }
+    : { width: Math.round(wcm * PPC * 2.2), height: Math.round(hcm * PPC), background: bg, color: fg }
   return (
     <div style={{ position: 'relative', flex: 'none', transformOrigin: 'bottom center', transform: it.tilt ? `rotate(${it.tilt}deg)` : undefined, margin: it.tilt ? '0 6px' : undefined }}>
       <button className={`spine ${it.kind}`} style={st} onClick={onClick} aria-label={it.title}><span>{it.title}</span></button>

@@ -3,6 +3,7 @@ import { sb } from '../supabase.js'
 import { Coin, Cover, Icon, Sheet, Stars } from '../ui.jsx'
 import { GENRES, KINDS, KIND_ORDER, coinsFor, searchTitles } from '../lib.js'
 
+const LANGS = { en: 'en inglés', pt: 'en portugués', fr: 'en francés', it: 'en italiano', de: 'en alemán' }
 const Light = ({ children, style }) => <div className="light" style={{ marginTop: 14, marginBottom: 6, ...style }}>{children}</div>
 
 function Choice({ on, title, sub, onClick }) {
@@ -83,7 +84,7 @@ export function AddSheet({ ctx, onClose, edit }) {
               {sugs.map((s, i) => (
                 <button key={i} onClick={() => pick(s)} className="row" style={{ width: '100%', border: 0, background: 'none', padding: '8px 10px', borderRadius: 12, textAlign: 'left' }}>
                   <Cover it={{ ...s, kind }} w={30} />
-                  <div style={{ minWidth: 0 }}><div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em' }}>{s.title}</div><div className="light" style={{ fontSize: 9, letterSpacing: '.12em', marginTop: 2 }}>{[KINDS[kind].label, s.year, s.creator].filter(Boolean).join(' · ')}</div></div>
+                  <div style={{ minWidth: 0, flex: 1 }}><div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em' }}>{s.title}{s.lang && s.lang !== 'es' && <span style={{ marginLeft: 6, fontWeight: 300, fontSize: 10.5, padding: '1px 6px', borderRadius: 99, boxShadow: 'inset 0 0 0 1px var(--gris)', verticalAlign: 2 }}>{LANGS[s.lang] || s.lang}</span>}</div><div className="light" style={{ fontSize: 9, letterSpacing: '.12em', marginTop: 2 }}>{[KINDS[kind].label, s.year, s.creator].filter(Boolean).join(' · ')}</div></div>
                 </button>
               ))}
               <div style={{ padding: '9px 10px 6px', borderTop: '1px solid var(--line)', marginTop: 4, fontWeight: 300, fontSize: 13 }}>¿No está? <button className="linkbtn" style={{ fontSize: 13 }} onClick={() => { setPicked(true); setSugs([]) }}>Cargal{kind === 'book' ? 'o' : 'a'} igual</button></div>
