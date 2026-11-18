@@ -229,7 +229,8 @@ export function GiftsPanel({ uid, say, wide }) {
         <p className="body" style={{ fontSize: 14 }}>Quien entre por el link y cree su cuenta recibe los tecoins al armar su perfil. Solo vale para cuentas nuevas, una vez por persona.</p>
         <label className="field"><span className="light">Para quién · solo lo ves vos</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Juli" /></label>
         <div className="field"><span className="light">Tecoins</span><div className="row" style={{ gap: 6 }}>{[20, 50, 100, 200].map((n) => <button type="button" key={n} className={`chip ${coins === n ? 'lim' : ''}`} onClick={() => setCoins(n)}><Coin s={14} />{n}</button>)}</div></div>
-        <div className="field"><span className="light">¿Cuántas personas lo pueden usar?</span><div className="row" style={{ gap: 6 }}>{[1, 5, 10, 50].map((n) => <button type="button" key={n} className={`chip ${uses === n ? 'on' : ''}`} onClick={() => setUses(n)}>{n === 1 ? '1 persona' : n}</button>)}</div></div>
+        <div className="field"><span className="light">¿Cuántas personas lo pueden usar?</span><div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>{[1, 5, 10, 50].map((n) => <button type="button" key={n} className={`chip ${uses === n ? 'on' : ''}`} onClick={() => setUses(n)}>{n === 1 ? '1 persona' : n}</button>)}
+          <label className="row" style={{ gap: 6, fontWeight: 300, fontSize: 13 }}>u otro:<input className="input" type="number" min="1" max="500" inputMode="numeric" value={[1, 5, 10, 50].includes(uses) ? '' : uses} onChange={(e) => { const v = Math.min(500, Math.max(1, parseInt(e.target.value) || 1)); setUses(e.target.value === '' ? 1 : v) }} placeholder="25" style={{ width: 80, padding: '8px 10px', fontSize: 14 }} /></label></div></div>
         <div style={{ marginTop: 18 }}><button className="btn" disabled={busy}>{busy ? 'Creando…' : 'Crear y copiar link'}</button></div>
       </form>
       <div>
