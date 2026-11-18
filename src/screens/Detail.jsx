@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { sb } from '../supabase.js'
 import { Avatar, Cover, Sheet, Stars } from '../ui.jsx'
-import { KINDS, fmtDate, genreLabel } from '../lib.js'
+import { KINDS, fmtDate, genreLabels } from '../lib.js'
 import { AddSheet } from './Add.jsx'
 
 const norm = (s) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -41,7 +41,7 @@ export function Detail({ ctx, it, onClose }) {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 18px' }}><div style={{ transform: 'rotate(-3deg)' }}><Cover it={current} w={108} /></div></div>
       <h2 className="h" style={{ fontSize: 32 }}>{current.title}</h2>
       <div className="between" style={{ marginTop: 8 }}><span className="light">{[current.creator, current.year].filter(Boolean).join(' · ')}</span><Stars n={current.stars || 0} s={17} /></div>
-      <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 6 }}>{genreLabel(current.genre) && <span className="chip">{genreLabel(current.genre)}</span>}<span className="chip">{meta.join(' · ')}</span></div>
+      <div className="row" style={{ marginTop: 10, flexWrap: 'wrap', gap: 6 }}>{genreLabels(current.genre).map((g) => <span key={g} className="chip">{g}</span>)}<span className="chip">{meta.join(' · ')}</span></div>
       {current.review && (
         <div className="card" style={{ marginTop: 14 }}>
           <div className="row" style={{ gap: 8 }}><Avatar p={owner} s={22} /><span className="light">{mine ? 'Tu reseña' : `La reseña de ${owner?.name || ''}`}</span></div>

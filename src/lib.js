@@ -9,11 +9,31 @@ export const PLATFORMS = ['Netflix', 'Prime Video', 'Disney+', 'Max', 'Apple TV+
 export const KIND_ORDER = ['book', 'movie', 'show']
 
 export const GENRES = [
-  ['amor', '💘', 'amor'], ['scifi', '🚀', 'ciencia ficción'], ['thriller', '🔪', 'thriller'],
-  ['drama', '🎭', 'drama'], ['comedia', '😂', 'comedia'], ['terror', '👻', 'terror'],
-  ['fantasia', '🐉', 'fantasía'], ['noficcion', '🧠', 'no ficción'],
+  ['amor', '💘', 'amor'], ['drama', '🎭', 'drama'], ['comedia', '😂', 'comedia'], ['thriller', '🔪', 'thriller'],
+  ['misterio', '🕵️', 'misterio'], ['terror', '👻', 'terror'], ['scifi', '🚀', 'ciencia ficción'], ['fantasia', '🐉', 'fantasía'],
+  ['accion', '💥', 'acción'], ['historia', '🏛️', 'historia'], ['animacion', '🎨', 'animación'], ['noficcion', '🧠', 'no ficción'],
 ]
-export const genreLabel = (g) => { const x = GENRES.find((y) => y[0] === g); return x ? `${x[1]} ${x[2]}` : null }
+export const genreList = (g) => (g || '').split(',').map((x) => x.trim()).filter((x) => GENRES.some((y) => y[0] === x))
+export const genreLabels = (g) => genreList(g).map((k) => { const x = GENRES.find((y) => y[0] === k); return `${x[1]} ${x[2]}` })
+export const genreLabel = (g) => genreLabels(g)[0] || null
+
+// Traduce las categorías que traen Google Books / iTunes (en inglés o castellano) a las de teca
+const GENRE_WORDS = [
+  ['amor', /romance|romant|love|amor/], ['scifi', /science fiction|sci-fi|ciencia ficci|dystop|distop/],
+  ['fantasia', /fantas/], ['terror', /horror|terror/], ['misterio', /myster|misterio|detective/],
+  ['thriller', /thriller|suspense|crime|policial|crimen|noir/], ['comedia', /humor|comed|humour/],
+  ['historia', /histor|war\b|guerra/], ['animacion', /anima|comics|graphic novel|manga|historieta/],
+  ['accion', /action|adventure|acci[oó]n|aventura/],
+  ['noficcion', /biograph|biograf|memoir|self-help|autoayuda|psycholog|psicolog|philosoph|filosof|business|negocios|science(?! fiction)|ciencia(?! ficci)|essay|ensayo|social|politic|true crime|documentar|nonfiction|no ficci|health|salud|cooking|cocina/],
+  ['drama', /drama|literary|literaria|fiction|ficci[oó]n|novel/],
+]
+export function genresFromText(...texts) {
+  const t = texts.flat().filter(Boolean).join(' | ').toLowerCase()
+  if (!t) return []
+  const found = GENRE_WORDS.filter(([, re]) => re.test(t)).map(([k]) => k)
+  // "ficción" genérica solo cuenta como drama si no apareció nada más específico
+  return found.length > 1 ? found.filter((k) => k !== 'drama').slice(0, 3) : found
+}
 
 // ----- Tecoins -----
 export const COINS = {
@@ -98,6 +118,7 @@ async function googleBooks(q, author, spanish) {
     pages: v.pageCount || null,
     cover_url: v.imageLinks?.thumbnail ? v.imageLinks.thumbnail.replace('http://', 'https://').replace('&edge=curl', '') : null,
     lang: spanish ? 'es' : v.language || null,
+    genres: genresFromText(v.categories || [], v.mainCategory || ''),
   }))
   // primero los que tienen tapa y coinciden mejor con el título
   const nq = norm(q)
@@ -105,7 +126,7 @@ async function googleBooks(q, author, spanish) {
   return dedupe(out)
 }
 async function openLibrary(q, author) {
-  const params = new URLSearchParams({ fields: 'key,title,author_name,first_publish_year,cover_i,number_of_pages_median', limit: '8' })
+  const params = new URLSearchParams({ fields: 'key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject', limit: '8' })
   if (q) params.set('title', q)
   if (author) params.set('author', author)
   const r = await fetch(`https://openlibrary.org/search.json?${params}`)
@@ -115,6 +136,7 @@ async function openLibrary(q, author) {
     title: d.title, creator: (d.author_name || [])[0] || '', year: d.first_publish_year || null,
     pages: d.number_of_pages_median || null,
     cover_url: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
+    genres: genresFromText((d.subject || []).slice(0, 12)),
   }))
 }
 

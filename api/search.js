@@ -13,6 +13,10 @@ export default async function handler(req, res) {
   }
 }
 
+const TMDB_GENRES = { 28: ['accion'], 12: ['accion'], 10759: ['accion'], 16: ['animacion'], 35: ['comedia'], 80: ['thriller'], 53: ['thriller'], 99: ['noficcion'], 18: ['drama'], 14: ['fantasia'], 36: ['historia'], 10752: ['historia'], 10768: ['historia'], 27: ['terror'], 9648: ['misterio'], 10749: ['amor'], 878: ['scifi'], 10765: ['scifi', 'fantasia'] }
+const fromTmdb = (ids = []) => [...new Set(ids.flatMap((i) => TMDB_GENRES[i] || []))].slice(0, 3)
+const WORDS = [['amor', /romance/i], ['scifi', /sci-fi|science fiction/i], ['fantasia', /fantasy/i], ['terror', /horror/i], ['thriller', /thriller|crime/i], ['misterio', /myster/i], ['comedia', /comedy/i], ['accion', /action|adventure/i], ['animacion', /anima|kids/i], ['noficcion', /documentar|reality|non-fiction/i], ['historia', /history|war/i], ['drama', /drama/i]]
+const fromWords = (t = '') => WORDS.filter(([, re]) => re.test(t)).map(([k]) => k).slice(0, 3)
 const big = (u) => (u ? u.replace(/\/\d+x\d+(bb)?\./, '/600x900bb.') : null)
 
 async function itunes(type, term) {
@@ -24,6 +28,7 @@ async function itunes(type, term) {
       creator: r.artistName || '',
       year: parseInt((r.releaseDate || '').slice(0, 4)) || null,
       cover_url: big(r.artworkUrl100),
+      genres: fromWords(r.primaryGenreName),
     }))
   }
   const j = await (await fetch(base + '&media=tvShow&entity=tvSeason')).json()
@@ -33,7 +38,7 @@ async function itunes(type, term) {
     if (!name) continue
     const m = (r.collectionName || '').match(/(?:season|temporada)\s*(\d+)/i)
     const n = m ? parseInt(m[1]) : 1
-    const s = shows.get(name) || { title: name, creator: '', year: null, seasons: 0, cover_url: null, _first: 99 }
+    const s = shows.get(name) || { title: name, creator: '', year: null, seasons: 0, cover_url: null, genres: fromWords(r.primaryGenreName), _first: 99 }
     s.seasons = Math.max(s.seasons, n)
     const y = parseInt((r.releaseDate || '').slice(0, 4)) || null
     if (n < s._first) { s._first = n; s.year = y; s.cover_url = big(r.artworkUrl100) }
@@ -58,6 +63,7 @@ async function tmdb(type, term) {
       year: parseInt((d.release_date || d.first_air_date || '').slice(0, 4)) || null,
       seasons: kind === 'tv' ? det.number_of_seasons || null : null,
       in_theaters: kind === 'movie' ? playing.has(d.id) : undefined,
+      genres: fromTmdb(d.genre_ids),
       cover_url: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
     }
   }))

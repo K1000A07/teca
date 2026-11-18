@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Coin, Cover, Icon, Sheet, Stars } from '../ui.jsx'
-import { GENRES, KINDS, KIND_ORDER, PLATFORMS, coinsFor, searchTitles } from '../lib.js'
+import { GENRES, KINDS, KIND_ORDER, PLATFORMS, coinsFor, genreList, searchTitles } from '../lib.js'
 
 const LANGS = { en: 'en inglés', pt: 'en portugués', fr: 'en francés', it: 'en italiano', de: 'en alemán' }
 const Light = ({ children, style }) => <div className="light" style={{ marginTop: 14, marginBottom: 6, ...style }}>{children}</div>
@@ -17,7 +17,7 @@ function Choice({ on, title, sub, onClick }) {
 
 export function AddSheet({ ctx, onClose, edit }) {
   const [kind, setKind] = useState(edit?.kind || ctx.teca)
-  const [f, setF] = useState(edit ? { ...edit, in_theaters: edit.seen_where === 'cine' } : { title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
+  const [f, setF] = useState(edit ? { ...edit, genres: genreList(edit.genre), in_theaters: edit.seen_where === 'cine' } : { genres: [], title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
   const [q, setQ] = useState(edit?.title || '')
   const [sugs, setSugs] = useState([])
   const [picked, setPicked] = useState(!!edit)
@@ -33,7 +33,8 @@ export function AddSheet({ ctx, onClose, edit }) {
     return () => clearTimeout(t)
   }, [q, f.creator, kind, picked])
 
-  function pick(s) { setF((x) => ({ ...x, ...s })); setQ(s.title); setPicked(true); setSugs([]) }
+  function pick(s) { setF((x) => ({ ...x, ...s, genres: s.genres?.length ? s.genres : x.genres })); setQ(s.title); setPicked(true); setSugs([]) }
+  const toggleGenre = (k) => setF((x) => ({ ...x, genres: x.genres.includes(k) ? x.genres.filter((g) => g !== k) : [...x.genres, k] }))
   const item = { ...f, kind, title: q.trim() }
   const { total, parts } = coinsFor(item)
 
@@ -42,7 +43,7 @@ export function AddSheet({ ctx, onClose, edit }) {
     setBusy(true)
     const row = { user_id: ctx.uid, kind, title: item.title, creator: f.creator || null, year: f.year ? Number(f.year) : null, cover_url: f.cover_url || null,
       pages: kind === 'book' && f.pages ? Number(f.pages) : null, seasons: kind === 'show' && f.seasons ? Number(f.seasons) : null,
-      stars: f.stars || null, genre: f.genre, review: f.review?.trim() || null, seen_where: kind === 'book' ? null : kind === 'show' ? 'casa' : f.seen_where,
+      stars: f.stars || null, genre: f.genres.length ? f.genres.join(',') : null, review: f.review?.trim() || null, seen_where: kind === 'book' ? null : kind === 'show' ? 'casa' : f.seen_where,
       platform: kind !== 'book' && (kind === 'show' || f.seen_where === 'casa') ? f.platform || null : null,
       format: kind === 'book' ? f.format : null, coins: total, tilt: edit ? edit.tilt : (Math.random() < 0.12 ? (Math.random() < .5 ? -7 : 7) : 0) }
     const res = edit ? await sb.from('items').update(row).eq('id', edit.id).select().single() : await sb.from('items').insert(row).select().single()
@@ -109,8 +110,8 @@ export function AddSheet({ ctx, onClose, edit }) {
       <Light>¿Cuántas estrellas?</Light>
       <Stars n={f.stars} s={30} onChange={(v) => set('stars', v)} />
 
-      <Light>¿De qué va?</Light>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{GENRES.map(([k, e, l]) => <button key={k} type="button" className={`chip ${f.genre === k ? 'lim' : ''}`} onClick={() => set('genre', f.genre === k ? null : k)}>{e} {l}</button>)}</div>
+      <Light>¿De qué va? · podés elegir varias</Light>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{GENRES.map(([k, e, l]) => <button key={k} type="button" aria-pressed={f.genres.includes(k)} className={`chip ${f.genres.includes(k) ? 'lim' : ''}`} onClick={() => toggleGenre(k)}>{e} {l}</button>)}</div>
 
       {kind === 'movie' && (<>
         <Light>¿Dónde la viste?</Light>
