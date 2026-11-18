@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
-import { Avatar, Back, Coin, CoinPill, Cover, Icon } from '../ui.jsx'
+import { Avatar, Back, Coin, CoinPill, Cover, Icon, Sheet } from '../ui.jsx'
 import { COINS, KINDS } from '../lib.js'
 import { ProfileForm } from './Auth.jsx'
 import { InstallContent, isStandalone } from './Tutorial.jsx'
@@ -74,6 +74,7 @@ export function Settings({ ctx }) {
         <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /></Group>
         <Group t="Privacidad"><Row t="Quién ve qué" v="Amigos" onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
         <Group t="La app"><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
+        {ctx.profile.is_admin && <Group t="Solo para vos"><Row t="Links de regalo" v="tecoins" onClick={() => ctx.go('gifts')} /></Group>}
         <div style={{ marginTop: 22 }}><button className="btn white" onClick={() => sb.auth.signOut()}>Cerrar sesión</button></div>
       </div>
     </div>
@@ -175,6 +176,75 @@ export function Clubs({ ctx }) {
           <p className="body" style={{ marginTop: 14 }}>Acá vas a poder armar clubes con tus amigos, elegir qué leer o ver, hasta dónde y para cuándo, y charlar sin spoilers.</p>
         </div>
       </div>
+    </div>
+  )
+}
+
+export function GiftSheet({ coins, onClose }) {
+  return (
+    <Sheet onClose={onClose}>
+      <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
+        <div className="tape" style={{ fontSize: 12, padding: '6px 10px' }}>UN REGALO</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 800, fontSize: 46, letterSpacing: '-0.05em', marginTop: 18 }}>+{coins} <Coin s={42} /></div>
+        <h2 className="h" style={{ fontSize: 28, marginTop: 14 }}>¡Te regalaron {coins} tecoins!</h2>
+        <p className="body" style={{ marginTop: 8 }}>Ya están en tu cuenta. Muy pronto vas a poder canjearlos por decoraciones para tu estante.</p>
+        <div style={{ marginTop: 22 }}><button className="btn" onClick={onClose}>¡Gracias!</button></div>
+      </div>
+    </Sheet>
+  )
+}
+
+const slug = (t) => (t || 'regalo').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20) || 'regalo'
+
+export function Gifts({ ctx }) {
+  const [list, setList] = useState(null)
+  const [note, setNote] = useState('')
+  const [coins, setCoins] = useState(50)
+  const [uses, setUses] = useState(1)
+  const [busy, setBusy] = useState(false)
+  const load = () => sb.from('invites').select('*').order('created_at', { ascending: false }).then(({ data }) => setList(data || []))
+  useEffect(() => { load() }, [])
+  const link = (c) => `${location.origin}/?regalo=${c}`
+  async function copy(c) {
+    const url = link(c)
+    if (navigator.share) { try { await navigator.share({ title: 'teca', text: `Te regalo tecoins para que arranques tu teca`, url }); return } catch {} }
+    await navigator.clipboard.writeText(url); ctx.say('Link copiado')
+  }
+  async function create(e) {
+    e.preventDefault(); setBusy(true)
+    const code = `${slug(note)}-${Math.random().toString(36).slice(2, 6)}`
+    const { error } = await sb.from('invites').insert({ code, coins, max_uses: uses, note: note.trim() || null, created_by: ctx.uid })
+    setBusy(false)
+    if (error) return ctx.say('No se pudo crear: ' + error.message)
+    setNote(''); load(); copy(code)
+  }
+  async function del(c) { if (!confirm('¿Borrar este link? Ya no se va a poder usar.')) return; await sb.from('invites').delete().eq('code', c); load() }
+  return (
+    <div>
+      <Back onBack={ctx.back} title="Links de regalo" />
+      <form className="pad" onSubmit={create}>
+        <p className="body" style={{ fontSize: 14 }}>Quien entre por el link y cree su cuenta recibe los tecoins al armar su perfil. Solo vale para cuentas nuevas, una vez por persona.</p>
+        <label className="field"><span className="light">Para quién · solo lo ves vos</span><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Juli" /></label>
+        <div className="field"><span className="light">Tecoins</span><div className="row" style={{ gap: 6 }}>{[20, 50, 100, 200].map((n) => <button type="button" key={n} className={`chip ${coins === n ? 'lim' : ''}`} onClick={() => setCoins(n)}><Coin s={14} />{n}</button>)}</div></div>
+        <div className="field"><span className="light">¿Cuántas personas lo pueden usar?</span><div className="row" style={{ gap: 6 }}>{[1, 5, 10, 50].map((n) => <button type="button" key={n} className={`chip ${uses === n ? 'on' : ''}`} onClick={() => setUses(n)}>{n === 1 ? '1 persona' : n}</button>)}</div></div>
+        <div style={{ marginTop: 18 }}><button className="btn" disabled={busy}>{busy ? 'Creando…' : 'Crear y copiar link'}</button></div>
+      </form>
+      <div className="pad light" style={{ marginTop: 26 }}>Tus links</div>
+      {list === null && <p className="pad body muted">Cargando…</p>}
+      {list?.map((g) => (
+        <div key={g.code} className="listrow" style={{ alignItems: 'flex-start' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: 15 }}>{g.note || g.code}</div>
+            <div style={{ fontWeight: 300, fontSize: 12.5, color: 'var(--gris)', marginTop: 2, wordBreak: 'break-all' }}>{link(g.code).replace(/^https?:\/\//, '')}</div>
+            <div className="row" style={{ gap: 8, marginTop: 6, fontSize: 13 }}><span className="row" style={{ gap: 4, fontWeight: 800 }}><Coin s={14} />{g.coins}</span><span style={{ fontWeight: 300 }}>· usado {g.uses} de {g.max_uses}</span></div>
+          </div>
+          <div className="stack" style={{ gap: 6, alignItems: 'flex-end' }}>
+            <button className="chip lim" onClick={() => copy(g.code)}>copiar</button>
+            <button className="linkbtn" style={{ fontWeight: 300, fontSize: 12.5 }} onClick={() => del(g.code)}>borrar</button>
+          </div>
+        </div>
+      ))}
+      {list?.length === 0 && <p className="pad body muted" style={{ fontSize: 14 }}>Todavía no creaste ninguno.</p>}
     </div>
   )
 }

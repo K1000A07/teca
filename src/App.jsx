@@ -8,7 +8,10 @@ import { Detail } from './screens/Detail.jsx'
 import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
 import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
-import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile } from './screens/Profile.jsx'
+import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
+
+// Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
+try { const g = new URLSearchParams(location.search).get('regalo'); if (g) { localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', location.pathname) } } catch {}
 
 export default function App() {
   const [intro, setIntro] = useState(true)
@@ -72,6 +75,14 @@ export default function App() {
   useEffect(() => { if (profile) loadAll() }, [profile, loadAll])
   useEffect(() => { if (profile && uid && !localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400) }, [profile?.id, uid])
   const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }) }, [uid])
+  useEffect(() => {
+    const code = localStorage.getItem('teca.gift')
+    if (!profile || !code) return
+    localStorage.removeItem('teca.gift')
+    sb.rpc('redeem_invite', { p_code: code }).then(({ data }) => {
+      if (data > 0) { setProfile((p) => ({ ...p, bonus_coins: (p.bonus_coins || 0) + data })); setSheet({ t: 'gift', coins: data }) }
+    })
+  }, [profile?.id])
   const startTour = useCallback(() => { setStack([{ s: 'lib' }]); setTeca('book'); setTimeout(() => setTour(true), 300) }, [])
 
   // ----- navegación con el botón "atrás" del celu -----
@@ -80,7 +91,7 @@ export default function App() {
   const back = useCallback(() => setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)), [])
   useEffect(() => { const f = () => { setSheet(null); setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)) }; window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f) }, [])
 
-  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0), [items])
+  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0) + (profile?.bonus_coins || 0), [items, profile?.bonus_coins])
   const friends = useMemo(() => friendships.filter((f) => f.status === 'accepted').map((f) => people[f.requester === uid ? f.addressee : f.requester]).filter(Boolean), [friendships, people, uid])
   const incoming = useMemo(() => friendships.filter((f) => f.status === 'pending' && f.addressee === uid), [friendships, uid])
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
@@ -97,7 +108,7 @@ export default function App() {
     lib: <Home ctx={ctx} />, friends: <Friends ctx={ctx} />, clubs: <Clubs ctx={ctx} />, rank: <Ranking ctx={ctx} />, me: <Profile ctx={ctx} />,
     friend: <FriendTeca ctx={ctx} person={view.person} />, news: <Notifications ctx={ctx} />,
     settings: <Settings ctx={ctx} />, privacy: <Privacy ctx={ctx} />, policy: <Policy ctx={ctx} />, tecoins: <Tecoins ctx={ctx} />,
-    install: <Install ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />,
+    install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />,
   }
   const root = stack[0].s
   return (
@@ -107,7 +118,8 @@ export default function App() {
       {sheet?.t === 'add' && <AddSheet ctx={ctx} onClose={() => setSheet(null)} />}
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
-      {tour && stack.length === 1 && <Tutorial onDone={endTour} />}
+      {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} onClose={() => setSheet(null)} />}
+      {tour && !sheet && stack.length === 1 && <Tutorial onDone={endTour} />}
       <Toast msg={toast} />
     </div>
   )

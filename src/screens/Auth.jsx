@@ -126,8 +126,10 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel }) {
     if (!/^[a-z0-9_.]{3,20}$/.test(u)) return setErr('El usuario va de 3 a 20 caracteres: letras, números, punto o guion bajo.')
     if (!name.trim()) return setErr('Poné tu nombre.')
     setBusy(true)
-    const row = { id: ctx.uid, username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar }
-    const { data, error } = await sb.from('profiles').upsert(row).select().single()
+    const row = { username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar }
+    const { data, error } = initial
+      ? await sb.from('profiles').update(row).eq('id', ctx.uid).select().single()
+      : await sb.from('profiles').insert({ id: ctx.uid, ...row }).select().single()
     setBusy(false)
     if (error) return setErr(error.code === '23505' ? 'Ese usuario ya existe. Probá otro.' : 'No se pudo guardar. ' + error.message)
     ctx.setProfile(data); onDone?.()
