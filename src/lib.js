@@ -32,7 +32,7 @@ export function coinsFor(it) {
     const nowY = new Date().getFullYear()
     const isNew = it.year && nowY - it.year < 1
     parts.push([isNew ? COINS.movieNew : COINS.movieCatalog, isNew ? 'estreno' : 'peli de catálogo'])
-    if (it.seen_where === 'cine') parts.push([COINS.cinema, 'en el cine'])
+    if (it.seen_where === 'cine' && it.in_theaters) parts.push([COINS.cinema, 'cine en cartelera'])
   } else {
     const long = (it.seasons || 0) >= 4
     parts.push([long ? COINS.showLong : COINS.showShort, long ? 'serie larga' : 'serie corta'])

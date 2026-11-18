@@ -47,6 +47,7 @@ async function tmdb(type, term) {
   const kind = type === 'movie' ? 'movie' : 'tv'
   const j = await (await fetch(`https://api.themoviedb.org/3/search/${kind}?query=${encodeURIComponent(term)}&language=es-AR&api_key=${key}`)).json()
   const top = (j.results || []).slice(0, 7)
+  const playing = kind === 'movie' ? await nowPlaying(key) : new Set()
   return Promise.all(top.map(async (d) => {
     const det = await (await fetch(`https://api.themoviedb.org/3/${kind}/${d.id}?language=es-AR&append_to_response=credits&api_key=${key}`)).json().catch(() => ({}))
     const director = kind === 'movie' ? (det.credits?.crew || []).find((c) => c.job === 'Director')?.name : (det.created_by || [])[0]?.name
@@ -56,7 +57,22 @@ async function tmdb(type, term) {
       creator: director || '',
       year: parseInt((d.release_date || d.first_air_date || '').slice(0, 4)) || null,
       seasons: kind === 'tv' ? det.number_of_seasons || null : null,
+      in_theaters: kind === 'movie' ? playing.has(d.id) : undefined,
       cover_url: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
     }
   }))
+}
+
+// Pelis en cartelera en Argentina (las primeras 3 páginas alcanzan)
+let cache = { at: 0, ids: new Set() }
+async function nowPlaying(key) {
+  if (Date.now() - cache.at < 6 * 3600e3) return cache.ids
+  const ids = new Set()
+  for (const page of [1, 2, 3]) {
+    const j = await (await fetch(`https://api.themoviedb.org/3/movie/now_playing?region=AR&language=es-AR&page=${page}&api_key=${key}`)).json().catch(() => ({}))
+    for (const m of j.results || []) ids.add(m.id)
+    if (!j.total_pages || page >= j.total_pages) break
+  }
+  cache = { at: Date.now(), ids }
+  return ids
 }

@@ -17,7 +17,7 @@ function Choice({ on, title, sub, onClick }) {
 
 export function AddSheet({ ctx, onClose, edit }) {
   const [kind, setKind] = useState(edit?.kind || ctx.teca)
-  const [f, setF] = useState(edit || { title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
+  const [f, setF] = useState(edit ? { ...edit, in_theaters: edit.seen_where === 'cine' } : { title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
   const [q, setQ] = useState(edit?.title || '')
   const [sugs, setSugs] = useState([])
   const [picked, setPicked] = useState(!!edit)
@@ -118,6 +118,7 @@ export function AddSheet({ ctx, onClose, edit }) {
           <Choice on={f.seen_where === 'casa'} title="En casa" sub="Tele, compu o celu" onClick={() => set('seen_where', 'casa')} />
           <Choice on={f.seen_where === 'cine'} title="En el cine" sub={<>+15 <Coin s={12} /> si está en cartelera</>} onClick={() => set('seen_where', 'cine')} />
         </div>
+        {f.seen_where === 'cine' && <div style={{ marginTop: 8, fontWeight: 300, fontSize: 12.5, lineHeight: 1.4 }}>{f.in_theaters ? <b style={{ fontWeight: 800 }}>✓ Está en cartelera: suma +15</b> : picked && f.cover_url ? 'No figura en cartelera ahora, así que no suma los +15.' : 'Elegila de la lista para chequear si está en cartelera.'}</div>}
       </>)}
       {kind !== 'book' && (kind === 'show' || f.seen_where === 'casa') && (<>
         <Light>¿En qué plataforma?</Light>
