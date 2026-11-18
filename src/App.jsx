@@ -12,7 +12,11 @@ import { AdminApp } from './screens/Admin.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
-try { const g = new URLSearchParams(location.search).get('regalo'); if (g) { localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', location.pathname) } } catch {}
+try {
+  const m = location.pathname.match(/^\/regalo\/([a-z0-9-]+)/i)
+  const g = m ? m[1] : new URLSearchParams(location.search).get('regalo')
+  if (g) { localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/') }
+} catch {}
 
 export default function App() {
   const [intro, setIntro] = useState(true)
@@ -80,9 +84,11 @@ export default function App() {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return
     localStorage.removeItem('teca.gift')
-    sb.rpc('redeem_invite', { p_code: code }).then(({ data }) => {
-      if (data > 0) { setProfile((p) => ({ ...p, bonus_coins: (p.bonus_coins || 0) + data })); setSheet({ t: 'gift', coins: data }) }
-    })
+    ;(async () => {
+      const { data: info } = await sb.rpc('invite_info', { p_code: code })
+      const { data } = await sb.rpc('redeem_invite', { p_code: code })
+      if (data > 0) { setProfile((p) => ({ ...p, bonus_coins: (p.bonus_coins || 0) + data })); setSheet({ t: 'gift', coins: data, from: info?.[0]?.inviter }) }
+    })()
   }, [profile?.id])
   const startTour = useCallback(() => { setStack([{ s: 'lib' }]); setTeca('book'); setTimeout(() => setTour(true), 300) }, [])
 
@@ -121,7 +127,7 @@ export default function App() {
       {sheet?.t === 'add' && <AddSheet ctx={ctx} onClose={() => setSheet(null)} />}
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
-      {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} onClose={() => setSheet(null)} />}
+      {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} from={sheet.from} onClose={() => setSheet(null)} />}
       {tour && !sheet && stack.length === 1 && <Tutorial onDone={endTour} />}
       <Toast msg={toast} />
     </div>

@@ -24,6 +24,21 @@ function Phrase({ cycle }) {
   )
 }
 
+function InviteBanner() {
+  const [info, setInfo] = useState(null)
+  useEffect(() => {
+    const code = localStorage.getItem('teca.gift')
+    if (code) sb.rpc('invite_info', { p_code: code }).then(({ data }) => { if (data?.[0]?.valid) setInfo(data[0]) })
+  }, [])
+  if (!info) return null
+  return (
+    <div className="row" style={{ margin: '0 20px 18px', padding: '12px 14px', background: 'var(--lim)', borderRadius: 18, boxShadow: 'inset 0 0 0 1.5px var(--ink)', gap: 12 }}>
+      <span style={{ fontSize: 26 }}>🎁</span>
+      <div style={{ fontSize: 14, lineHeight: 1.35 }}><b>{info.inviter === 'Alguien' ? 'Te regalan' : `${info.inviter} te regala`} {info.coins} tecoins.</b><br /><span style={{ fontWeight: 300 }}>Creá tu cuenta para recibirlos.</span></div>
+    </div>
+  )
+}
+
 export function Login({ say }) {
   const [mode, setMode] = useState(null) // null | 'in' | 'up' | 'sent'
   const [email, setEmail] = useState('')
@@ -61,8 +76,10 @@ export function Login({ say }) {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <div style={{ paddingTop: mode ? 70 : 130, transition: 'padding .5s' }}><Phrase cycle={!mode} /></div>
+      <div style={{ height: 40 }} />
+      <InviteBanner />
       {!mode ? (
-        <div className="pad" style={{ marginTop: 56 }}>
+        <div className="pad" style={{ marginTop: 16 }}>
           <p className="body" style={{ textAlign: 'center', fontSize: 16 }}>Guardá todo lo que leés y mirás,<br />y compartilo con tus amigos.</p>
           <div className="stack" style={{ marginTop: 32 }}>
             <button className="btn" onClick={() => setMode('in')}>Entrar con mail</button>

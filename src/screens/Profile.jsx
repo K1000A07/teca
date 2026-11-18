@@ -180,13 +180,13 @@ export function Clubs({ ctx }) {
   )
 }
 
-export function GiftSheet({ coins, onClose }) {
+export function GiftSheet({ coins, from, onClose }) {
   return (
     <Sheet onClose={onClose}>
       <div style={{ textAlign: 'center', padding: '10px 0 4px' }}>
         <div className="tape" style={{ fontSize: 12, padding: '6px 10px' }}>UN REGALO</div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontWeight: 800, fontSize: 46, letterSpacing: '-0.05em', marginTop: 18 }}>+{coins} <Coin s={42} /></div>
-        <h2 className="h" style={{ fontSize: 28, marginTop: 14 }}>¡Te regalaron {coins} tecoins!</h2>
+        <h2 className="h" style={{ fontSize: 28, marginTop: 14 }}>{from && from !== 'Alguien' ? `¡${from} te regaló ${coins} tecoins!` : `¡Te regalaron ${coins} tecoins!`}</h2>
         <p className="body" style={{ marginTop: 8 }}>Ya están en tu cuenta. Muy pronto vas a poder canjearlos por decoraciones para tu estante.</p>
         <div style={{ marginTop: 22 }}><button className="btn" onClick={onClose}>¡Gracias!</button></div>
       </div>
@@ -208,10 +208,10 @@ export function GiftsPanel({ uid, say, wide }) {
   const [busy, setBusy] = useState(false)
   const load = () => sb.from('invites').select('*').order('created_at', { ascending: false }).then(({ data }) => setList(data || []))
   useEffect(() => { load() }, [])
-  const link = (c) => `${location.origin}/?regalo=${c}`
+  const link = (c) => `${location.origin}/regalo/${c}`
   async function copy(c) {
     const url = link(c)
-    if (navigator.share) { try { await navigator.share({ title: 'teca', text: `Te regalo tecoins para que arranques tu teca`, url }); return } catch {} }
+    if (navigator.share) { try { await navigator.share({ title: 'teca', text: 'Te invito a teca, mi biblioteca de bolsillo. Te regalo tecoins para que arranques.', url }); return } catch {} }
     await navigator.clipboard.writeText(url); say('Link copiado')
   }
   async function create(e) {
