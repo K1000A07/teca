@@ -35,7 +35,7 @@ export function Detail({ ctx, it, onClose }) {
   }
 
   if (editing) return <AddSheet ctx={ctx} edit={current} onClose={() => { setEditing(false); onClose() }} />
-  const meta = [current.kind === 'book' ? (current.format === 'ebook' ? 'ebook' : 'en papel') : current.seen_where === 'cine' ? 'en el cine' : 'en casa', fmtDate(current.finished_at)]
+  const meta = [current.kind === 'book' ? (current.format === 'ebook' ? 'ebook' : 'en papel') : current.seen_where === 'cine' ? 'en el cine' : current.platform ? `en ${current.platform}` : 'en casa', fmtDate(current.finished_at)]
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 18px' }}><div style={{ transform: 'rotate(-3deg)' }}><Cover it={current} w={108} /></div></div>

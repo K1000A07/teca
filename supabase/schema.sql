@@ -30,6 +30,7 @@ create table if not exists public.items (
   review text,
   seen_where text check (seen_where in ('casa','cine')),
   format text check (format in ('papel','ebook')),
+  platform text,
   coins int not null default 0,
   tilt int not null default 0,
   position double precision,
@@ -145,3 +146,6 @@ grant select, insert, update, delete on all tables in schema public to authentic
 grant execute on all functions in schema public to authenticated;
 alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
 alter default privileges in schema public grant execute on functions to authenticated;
+
+-- ---------- Cambios posteriores ----------
+alter table public.items add column if not exists platform text;

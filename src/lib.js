@@ -3,8 +3,9 @@
 export const KINDS = {
   book: { teca: 'biblio', label: 'libro', plural: 'libros', creator: 'Autor/a', verb: 'leíste', icon: 'book' },
   movie: { teca: 'filmo', label: 'peli', plural: 'pelis', creator: 'Dirección', verb: 'viste', icon: 'clap' },
-  show: { teca: 'video', label: 'serie', plural: 'series', creator: 'Plataforma', verb: 'viste', icon: 'tv' },
+  show: { teca: 'video', label: 'serie', plural: 'series', creator: 'Creación', verb: 'viste', icon: 'tv' },
 }
+export const PLATFORMS = ['Netflix', 'Prime Video', 'Disney+', 'Max', 'Apple TV+', 'Paramount+', 'Mubi', 'Flow', 'YouTube', 'Otra']
 export const KIND_ORDER = ['book', 'movie', 'show']
 
 export const GENRES = [
@@ -72,19 +73,9 @@ export async function searchTitles(kind, q, author = '') {
     if (res.length < 3) { try { res = dedupe([...res, ...(await openLibrary(q, author))]) } catch {} }
     return res.slice(0, 7)
   }
-  const key = import.meta.env.VITE_TMDB_KEY
-  if (!key) return []
-  const type = kind === 'movie' ? 'movie' : 'tv'
-  const r = await fetch(`https://api.themoviedb.org/3/search/${type}?query=${encodeURIComponent(q)}&language=es-AR&api_key=${key}`)
+  const r = await fetch(`/api/search?type=${kind}&q=${encodeURIComponent([q, author].filter(Boolean).join(' '))}`)
   if (!r.ok) return []
-  const j = await r.json()
-  return (j.results || []).slice(0, 6).map((d) => ({
-    tmdb_id: d.id,
-    title: d.title || d.name,
-    creator: '',
-    year: parseInt((d.release_date || d.first_air_date || '').slice(0, 4)) || null,
-    cover_url: d.poster_path ? `https://image.tmdb.org/t/p/w500${d.poster_path}` : null,
-  }))
+  return r.json()
 }
 
 const norm = (x) => (x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
