@@ -137,3 +137,11 @@ create policy "cambiar mi foto" on storage.objects for update to authenticated
   using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
 drop policy if exists "ver fotos" on storage.objects;
 create policy "ver fotos" on storage.objects for select using (bucket_id = 'avatars');
+
+-- ---------- Permisos de la API ----------
+-- Los proyectos nuevos de Supabase no le dan permisos automáticos a las tablas creadas por SQL.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant execute on all functions in schema public to authenticated;
+alter default privileges in schema public grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema public grant execute on functions to authenticated;
