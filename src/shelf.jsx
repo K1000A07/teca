@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
 import { paletteFor, spineSize, PPC } from './lib.js'
 import { AsteriskMark } from './ui.jsx'
-import { DecoArt, SHELF_STYLES } from './decos.jsx'
+import { DecoArt, SHELF_STYLES, decoSize } from './decos.jsx'
 import { Dust } from './dust.jsx'
 
-const DECO_W = { plantita: 41, taza: 32, lampara: 44, portarretrato: 50, cartelera: 66 }
+const decoW = (kind) => Math.round(decoSize(kind).w)
 const spineW = (it) => Math.round(spineSize(it).wcm * PPC * 2.2)
 const spineH = (it) => Math.round(spineSize(it).hcm * PPC)
 
@@ -30,9 +30,9 @@ function toBlocks(entries) {
   return blocks
 }
 function blockWidth(b) {
-  if (b.type === 'pile') return Math.max(...b.entries.map((e) => spineH(e.ref)), b.top ? DECO_W[b.top.ref.kind] || 40 : 0) + 6
+  if (b.type === 'pile') return Math.max(...b.entries.map((e) => spineH(e.ref)), b.top ? decoW(b.top.ref.kind) : 0) + 6
   const e = b.entries[0]
-  if (e.type === 'deco') return (DECO_W[e.ref.kind] || 40) + 6
+  if (e.type === 'deco') return decoW(e.ref.kind) + 6
   return spineW(e.ref) + 1 + (e.ref.tilt ? 12 : 0)
 }
 

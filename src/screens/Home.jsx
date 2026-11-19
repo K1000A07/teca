@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CoinPill, Icon, Teca, useWidth } from '../ui.jsx'
 import { Shelf, buildEntries } from '../shelf.jsx'
 import { Tray, Toolbar, useArrange } from './Arrange.jsx'
+import { isPlant } from '../decos.jsx'
 import { GENRES, KINDS, KIND_ORDER, dustInfo, genreList, plantState } from '../lib.js'
 import { sb } from '../supabase.js'
 import { Coin } from '../ui.jsx'
@@ -96,7 +97,7 @@ export function Home({ ctx }) {
     ctx.say('¡Regada! 💧')
   }
   return (
-    <div {...(editing ? {} : swipe)} style={{ paddingBottom: editing ? 260 : 0 }}>
+    <div {...(editing ? {} : swipe)} style={{ paddingBottom: editing ? 320 : 0 }}>
       {editing ? (
         <div className="top"><h1 className="h" style={{ fontSize: 30 }}>Acomodando</h1><button className="chip on" style={{ padding: '10px 18px', fontSize: 14 }} onClick={() => { setEditing(false); setSel(null) }}>Listo</button></div>
       ) : <TopBar title={<Teca pre={`Mi ${KINDS[kind].teca}`} />} ctx={ctx} />}
@@ -130,7 +131,7 @@ export function Home({ ctx }) {
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
         onLongPress={(e) => { setEditing(true); setSel(e) }} onReorder={actions.reorder} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
-        onDecoTap={(d) => d.kind === 'plantita' && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>
+        onDecoTap={(d) => isPlant(d.kind) && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>
       {!mine.length && !editing && (
         <div className="pad" style={{ textAlign: 'center', marginTop: 22 }}>
           <div className="h" style={{ fontSize: 22, letterSpacing: '-0.035em' }}>{kind === 'book' ? '¿Qué fue lo último que leíste?' : kind === 'movie' ? '¿Qué fue la última peli que viste?' : '¿Qué serie terminaste?'}</div>

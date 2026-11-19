@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Back, Coin, CoinPill, Icon } from '../ui.jsx'
-import { DECOS, DecoArt, placeable } from '../decos.jsx'
+import { DECOS, DECO_CATS, DecoArt, placeable, decoName, takesPhoto, takesText } from '../decos.jsx'
 import { shrinkImage } from './Auth.jsx'
 
 // Acciones del modo acomodar y de la tienda
@@ -41,7 +41,7 @@ export function useArrange(ctx) {
     setDecos((xs) => [...xs, data])
     if (DECOS[kind].shelf) await setStyle(DECOS[kind].shelf)
     else if (placeIn) await place(data, placeIn)
-    say(`¡Canjeaste ${DECOS[kind].short || DECOS[kind].name}!`)
+    say(`¡Canjeaste ${decoName(kind)}!`)
     return data
   }
   async function setStyle(style) {
@@ -80,11 +80,21 @@ function PriceChip({ n, state }) {
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: state === 'can' ? 'var(--lim)' : '#fff', borderRadius: 99, padding: '2px 7px 2px 3px', fontWeight: 800, fontSize: 11, boxShadow: 'inset 0 0 0 1.2px var(--ink)', opacity: state === 'lock' ? .55 : 1 }}><Coin s={13} />{n}</span>
 }
 
-export function ShopTiles({ ctx, actions, kind }) {
+export function CatChips({ cat, setCat, dark }) {
+  return (
+    <div className="row" style={{ gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+      {DECO_CATS.map((c) => <button key={c.key} className={`chip ${cat === c.key ? 'on' : ''}`} style={{ padding: '5px 11px', fontSize: 12.5 }} onClick={() => setCat(c.key)}>{c.name}</button>)}
+    </div>
+  )
+}
+
+export function ShopTiles({ ctx, actions, kind, cat }) {
   const style = ctx.profile.shelf_style || 'madera'
   const owned = (k) => ctx.decos.some((d) => d.kind === k)
+  const kinds = DECO_CATS.find((c) => c.key === cat)?.kinds || []
   return (<>
-    {Object.entries(DECOS).map(([k, c]) => {
+    {kinds.map((k) => {
+      const c = DECOS[k]
       const isShelf = !!c.shelf
       const has = isShelf && owned(k)
       const inUse = isShelf && style === c.shelf
@@ -93,10 +103,10 @@ export function ShopTiles({ ctx, actions, kind }) {
         <button key={k} className="tile" onClick={async () => {
           if (isShelf && has) return actions.setStyle(inUse ? 'madera' : c.shelf)
           if (!can) return ctx.say(`Te faltan ${c.price - ctx.coins} tecoins`)
-          if (confirm(`¿Canjear ${c.short || c.name} por ${c.price} tecoins?`)) actions.buy(k, kind)
+          if (confirm(`¿Canjear ${c.name} por ${c.price} tecoins?`)) actions.buy(k, kind)
         }}>
-          <span className="box" style={{ opacity: !has && !can ? .5 : 1 }}><DecoArt d={{ kind: k }} s={k === 'lampara' ? .75 : .9} /></span>
-          <span className="lbl">{c.short || c.name}</span>
+          <span className="box" style={{ opacity: !has && !can ? .5 : 1 }}><DecoArt d={{ kind: k }} s={.9} fit={58} /></span>
+          <span className="lbl">{c.name}</span>
           {isShelf && has ? <span style={{ fontWeight: 800, fontSize: 10.5 }}>{inUse ? '✓ en uso' : 'usar'}</span> : <PriceChip n={c.price} state={can ? 'can' : 'lock'} />}
         </button>
       )
@@ -106,6 +116,7 @@ export function ShopTiles({ ctx, actions, kind }) {
 
 export function Tray({ ctx, actions, kind }) {
   const [tab, setTab] = useState(0)
+  const [cat, setCat] = useState('plantas')
   const loose = ctx.decos.filter((d) => placeable(d.kind) && !d.teca)
   return (
     <div className="tray">
@@ -113,13 +124,14 @@ export function Tray({ ctx, actions, kind }) {
         <div className="row" style={{ gap: 6 }}>{['Tus decos', 'Canjear'].map((t, i) => <button key={t} className={`chip ${tab === i ? 'on' : ''}`} onClick={() => setTab(i)}>{t}</button>)}</div>
         <CoinPill n={ctx.coins} />
       </div>
+      {tab === 1 && <div style={{ marginTop: 10 }}><CatChips cat={cat} setCat={setCat} /></div>}
       <div className="row" style={{ gap: 10, marginTop: 12, overflowX: 'auto', alignItems: 'flex-start', paddingBottom: 2 }}>
         {tab === 0 ? (loose.length ? loose.map((d) => (
           <button key={d.id} className="tile" onClick={() => actions.place(d, kind)}>
-            <span className="box"><DecoArt d={d} s={d.kind === 'lampara' ? .75 : .9} /></span><span className="lbl">{DECOS[d.kind].short || DECOS[d.kind].name}</span><span style={{ fontWeight: 300, fontSize: 10.5 }}>tocá para poner</span>
+            <span className="box"><DecoArt d={d} fit={58} /></span><span className="lbl">{decoName(d.kind)}</span><span style={{ fontWeight: 300, fontSize: 10.5 }}>tocá para poner</span>
           </button>
         )) : <p className="body" style={{ fontSize: 13.5, margin: '6px 0 14px' }}>{ctx.decos.some((d) => placeable(d.kind)) ? 'Todas tus decos ya están en algún estante.' : 'Todavía no tenés decoraciones. Canjeá tus tecoins en la pestaña Canjear.'}</p>)
-          : <ShopTiles ctx={ctx} actions={actions} kind={kind} />}
+          : <ShopTiles ctx={ctx} actions={actions} kind={kind} cat={cat} />}
       </div>
     </div>
   )
@@ -136,7 +148,7 @@ export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
     const it = entry.ref
     const o = it.lying ? 'lie' : it.tilt ? 'tilt' : 'up'
     return (
-      <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 196, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
+      <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 250, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
         {btn(o === 'up', shape(0, 6, 18), 'parado', () => actions.orient(it, 'up'))}
         {btn(o === 'lie', shape(0, 18, 6), 'acostado', () => actions.orient(it, 'lie'))}
         {btn(o === 'tilt', shape(16, 6, 18), 'inclinado', () => actions.orient(it, 'tilt'))}
@@ -146,10 +158,10 @@ export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
   }
   const d = entry.ref
   return (
-    <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 196, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
+    <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 250, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
       {(canStack || d.stacked) && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, d.stacked ? 'bajar' : 'arriba', () => actions.stack(d, !d.stacked))}
-      {d.kind === 'cartelera' && btn(false, <span style={{ fontWeight: 800, fontSize: 15, lineHeight: '20px' }}>Aa</span>, 'escribir', () => actions.writeSign(d))}
-      {d.kind === 'portarretrato' && <>{btn(false, <Icon n="photo" s={20} />, d.photo_url ? 'cambiar foto' : 'poner foto', () => fileRef.current.click())}<input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && actions.setPhoto(d, e.target.files[0])} /></>}
+      {takesText(d.kind) && btn(false, <span style={{ fontWeight: 800, fontSize: 15, lineHeight: '20px' }}>Aa</span>, 'escribir', () => actions.writeSign(d))}
+      {takesPhoto(d.kind) && <>{btn(false, <Icon n="photo" s={20} />, d.photo_url ? 'cambiar foto' : 'poner foto', () => fileRef.current.click())}<input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && actions.setPhoto(d, e.target.files[0])} /></>}
       {btn(false, <Icon n="x" s={20} />, 'sacar', () => { actions.unplace(d); onClose() })}
       {btn(false, <Icon n="check" s={20} />, 'listo', onClose)}
     </div>
@@ -158,6 +170,7 @@ export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
 
 export function Shop({ ctx }) {
   const actions = useArrange(ctx)
+  const [cat, setCat] = useState('plantas')
   return (
     <div style={{ background: 'var(--cell)', minHeight: '100dvh' }}>
       <Back onBack={ctx.back} title="Canjear tecoins" right={<CoinPill n={ctx.coins} />} />
@@ -165,7 +178,8 @@ export function Shop({ ctx }) {
         <h1 className="h" style={{ fontSize: 32 }}>Decorá tu teca</h1>
         <p className="body" style={{ marginTop: 8, fontSize: 14 }}>Canjeá tus tecoins por cositas para tu estante. Después las ponés y las movés desde <b>Acomodar</b>.</p>
         <button className="linkbtn" style={{ marginTop: 8 }} onClick={() => ctx.go('tecoins')}>Ver cuánto vale cada cosa</button>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginTop: 18, justifyItems: 'center' }}><ShopTiles ctx={ctx} actions={actions} kind={null} /></div>
+        <div style={{ marginTop: 18 }}><CatChips cat={cat} setCat={setCat} /></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginTop: 16, justifyItems: 'center' }}><ShopTiles ctx={ctx} actions={actions} kind={null} cat={cat} /></div>
       </div>
     </div>
   )

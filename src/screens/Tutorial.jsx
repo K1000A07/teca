@@ -6,7 +6,7 @@ const STEPS = [
   { target: 'tabs', title: 'Tres estantes, uno para cada cosa', text: <>Tu biblio<span className="serif">teca</span> para libros, tu filmo<span className="serif">teca</span> para pelis y tu video<span className="serif">teca</span> para series. Deslizá para pasar de una a otra.</>, radius: 99 },
   { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. La tapa aparece sola. Ponele estrellas y, si querés, una reseña para tus amigos.', radius: 99 },
   { target: 'shelf', title: 'Acomodalo a tu gusto', text: 'Mantené apretado cualquier título para entrar al modo acomodar: arrastralo, ponelo parado, acostado o inclinado, y sumá decoraciones.', radius: 8 },
-  { target: 'coins', title: 'Ganá tecoins', text: 'Cada cosa que cargás suma tecoins. Canjealos por plantitas, lámparas o estantes de colores. Ojo: si no pasás seguido, tu teca junta polvo.', radius: 99 },
+  { target: 'coins', title: 'Ganá tecoins', text: 'Cada cosa que cargás suma tecoins. Canjealos por plantas, gatos, velas y más decoraciones. Ojo: si no pasás seguido, tu teca junta polvo.', radius: 99 },
   { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario o mandales tu link: si se suman, ganan tecoins los dos. Y mirá en qué andan.', radius: 99 },
 ]
 

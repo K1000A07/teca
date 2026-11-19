@@ -176,9 +176,6 @@ const objects = {
     <rect x="20" y="26" width="4" height="10" fill="${C.brown}"/><path d="M12 70 c-4 -10 -2 -30 10 -34 c12 4 14 24 10 34 z" fill="${C.blush}"/>`) },
   lampara_lima: { name: 'Lámpara teca', w: 44, h: 78, draw: () => svg(44, 78, `
     <path d="M9 0 h26 l9 26 h-44 z" fill="${C.lime}"/><rect x="20" y="26" width="4" height="44" fill="${C.ink}"/><rect x="8" y="70" width="28" height="8" rx="4" fill="${C.ink}"/>`) },
-  pila_libros: { name: 'Pila de libros', w: 60, h: 34, draw: () => svg(60, 34, `
-    <rect x="2" y="24" width="56" height="10" rx="1" fill="${C.teal}"/><rect x="6" y="14" width="50" height="10" rx="1" fill="${C.coral}"/><rect x="3" y="4" width="48" height="10" rx="1" fill="${C.mustard}"/>
-    <path d="M8 29 h44 M12 19 h38 M8 9 h38" stroke="${C.cream}" stroke-width="1" stroke-dasharray="2 3"/>`) },
 }
 
 // ---------- CUADROS ----------
@@ -186,20 +183,20 @@ const frames = {
   foto: { name: 'Portarretrato', w: 46, h: 58, photo: true, draw: (o = {}) => svg(46, 58, `
     <rect x="0" y="0" width="46" height="58" rx="2" fill="${C.brown}"/><rect x="5" y="5" width="36" height="48" fill="${C.cream}"/>
     ${o.photo ? `<image href="${o.photo}" x="5" y="5" width="36" height="48" preserveAspectRatio="xMidYMid slice"/>` : `<circle cx="16" cy="18" r="4" fill="${C.mustard}"/><path d="M5 53 L 18 34 L 26 44 L 32 38 L 41 53 Z" fill="${C.leaf}"/>`}`) },
-  hoja: { name: 'Cuadro hoja', w: 52, h: 66, draw: () => svg(52, 66, `
+  hoja: { name: 'Cuadro hoja', w: 52, h: 66, photo: true, draw: (o = {}) => svg(52, 66, `
     <path d="M4 0 h44 a4 4 0 0 1 4 4 v58 a4 4 0 0 1 -4 4 h-44 a4 4 0 0 1 -4 -4 v-58 a4 4 0 0 1 4 -4 z" fill="${C.terra}"/><path d="M0 6 a6 6 0 0 1 6 -6 M46 0 a6 6 0 0 1 6 6 M52 60 a6 6 0 0 1 -6 6 M6 66 a6 6 0 0 1 -6 -6" stroke="${C.brown}" stroke-width="3" fill="none"/>
-    <rect x="7" y="7" width="38" height="52" fill="${C.pink}"/>
-    <path d="M26 54 V 16 M26 22 l-8 -6 M26 22 l8 -6 M26 30 l-10 -5 M26 30 l10 -5 M26 38 l-11 -4 M26 38 l11 -4 M26 46 l-9 -3 M26 46 l9 -3" stroke="${C.coral}" stroke-width="3.4" stroke-linecap="round"/>`) },
-  figura: { name: 'Cuadro figura', w: 58, h: 66, draw: () => svg(58, 66, `
+    ${o.photo ? `<image href="${o.photo}" x="7" y="7" width="38" height="52" preserveAspectRatio="xMidYMid slice"/>` : `<rect x="7" y="7" width="38" height="52" fill="${C.pink}"/>
+    <path d="M26 54 V 16 M26 22 l-8 -6 M26 22 l8 -6 M26 30 l-10 -5 M26 30 l10 -5 M26 38 l-11 -4 M26 38 l11 -4 M26 46 l-9 -3 M26 46 l9 -3" stroke="${C.coral}" stroke-width="3.4" stroke-linecap="round"/>`}`) },
+  figura: { name: 'Cuadro figura', w: 58, h: 66, photo: true, draw: (o = {}) => svg(58, 66, `
     <rect x="0" y="0" width="58" height="66" fill="${C.sage}"/><rect x="5" y="5" width="48" height="56" fill="${C.cream}"/>
-    <path d="M22 52 c-6 -2 -8 -10 -4 -16 c2 -4 0 -8 4 -12 c3 -3 8 -2 9 2 c2 5 -2 7 0 10 c4 1 10 6 8 12 c-2 4 -8 2 -10 4 c-2 2 -4 2 -7 0 z" fill="${C.cobalt}"/><circle cx="30" cy="16" r="5" fill="${C.cobalt}"/>`) },
+    ${o.photo ? `<image href="${o.photo}" x="5" y="5" width="48" height="56" preserveAspectRatio="xMidYMid slice"/>` : `<path d="M22 52 c-6 -2 -8 -10 -4 -16 c2 -4 0 -8 4 -12 c3 -3 8 -2 9 2 c2 5 -2 7 0 10 c4 1 10 6 8 12 c-2 4 -8 2 -10 4 c-2 2 -4 2 -7 0 z" fill="${C.cobalt}"/><circle cx="30" cy="16" r="5" fill="${C.cobalt}"/>`}`) },
   espejo: { name: 'Espejo', w: 40, h: 58, draw: () => svg(40, 58, `
     <path d="M20 0 c6 0 8 4 12 4 c4 0 6 4 6 8 v34 c0 4 -2 8 -6 8 c-4 0 -6 4 -12 4 c-6 0 -8 -4 -12 -4 c-4 0 -6 -4 -6 -8 v-34 c0 -4 2 -8 6 -8 c4 0 6 -4 12 -4 z" fill="${C.mustard}"/>
     <rect x="7" y="8" width="26" height="42" rx="12" fill="${C.sky}" fill-opacity=".6"/><path d="M12 18 l8 -6 M12 26 l14 -12" stroke="${C.white}" stroke-width="2" stroke-linecap="round"/>`) },
-  ondulado: { name: 'Cuadro ondulado', w: 54, h: 64, draw: () => svg(54, 64, `
+  ondulado: { name: 'Cuadro ondulado', w: 54, h: 64, photo: true, draw: (o = {}) => svg(54, 64, `
     <path d="M6 2 q6 -4 14 0 t14 0 t14 0 q4 4 2 12 t0 14 t0 14 t0 14 q-4 6 -14 4 t-14 0 t-14 0 q-6 -2 -4 -12 t0 -14 t0 -14 t0 -14 q-2 -2 2 -4 z" fill="${C.pink}"/>
-    <rect x="9" y="9" width="36" height="46" fill="${C.cream}"/><path d="M27 48 c-1 -6 1 -12 0 -18" stroke="${C.green}" stroke-width="1.6"/><path d="M21 30 l4 4 2 -5 2 5 4 -4 c0 8 -4 10 -6 10 c-2 0 -6 -2 -6 -10 z" fill="${C.coral}"/>
-    <path d="M22 40 h10 c2 4 4 6 4 10 h-18 c0 -4 2 -6 4 -10 z" fill="${C.yellow}"/>`) },
+    <rect x="9" y="9" width="36" height="46" fill="${C.cream}"/>${o.photo ? `<image href="${o.photo}" x="9" y="9" width="36" height="46" preserveAspectRatio="xMidYMid slice"/>` : `<path d="M27 48 c-1 -6 1 -12 0 -18" stroke="${C.green}" stroke-width="1.6"/><path d="M21 30 l4 4 2 -5 2 5 4 -4 c0 8 -4 10 -6 10 c-2 0 -6 -2 -6 -10 z" fill="${C.coral}"/>
+    <path d="M22 40 h10 c2 4 4 6 4 10 h-18 c0 -4 2 -6 4 -10 z" fill="${C.yellow}"/>`}`) },
 }
 
 export const CATEGORIES = [
