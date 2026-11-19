@@ -1,9 +1,11 @@
 import { plantState } from './lib.js'
+import { ART, drawAt } from './deco/art.js'
 // Decoraciones del estante: catálogo, precios y cómo se dibuja cada una.
 export const DECOS = {
   plantita: { name: 'Plantita', price: 30 },
   taza: { name: 'Taza teca', price: 40 },
   portarretrato: { name: 'Portarretrato con tu foto', short: 'Portarretrato', price: 60 },
+  cartelera: { name: 'Cartelera de cine', short: 'Cartelera', price: 50 },
   lampara: { name: 'Lámpara', price: 80 },
   estante_blanco: { name: 'Estante blanco', price: 100, shelf: 'blanco' },
   estante_celeste: { name: 'Estante celeste', price: 150, shelf: 'celeste' },
@@ -54,7 +56,12 @@ export function ShelfBar({ style, s = 1 }) {
   return <div aria-hidden="true" style={{ width: 70 * s, height: 12 * s, borderRadius: 2, background: SHELF_STYLES[style].plank, boxShadow: '0 8px 10px -6px rgba(0,0,0,.35)' }} />
 }
 
+export function Cartelera({ s = 1, text }) {
+  return <div aria-hidden="true" style={{ flex: 'none', lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: drawAt(ART['objetos/cartelera'], s, { text: text || 'HOY\nVEMOS\nUNA PELI' }) }} />
+}
+
 export function DecoArt({ d, s = 1 }) {
+  if (d.kind === 'cartelera') return <Cartelera s={s} text={d.text} />
   if (d.kind === 'plantita') return <Plant s={s} state={d.watered_at ? plantState(d.watered_at) : 'ok'} />
   if (d.kind === 'taza') return <Mug s={s} />
   if (d.kind === 'lampara') return <Lamp s={s} />

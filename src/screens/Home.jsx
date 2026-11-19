@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CoinPill, Icon, Teca, useWidth } from '../ui.jsx'
 import { Shelf, buildEntries } from '../shelf.jsx'
 import { Tray, Toolbar, useArrange } from './Arrange.jsx'
-import { KINDS, KIND_ORDER, dustInfo, plantState } from '../lib.js'
+import { GENRES, KINDS, KIND_ORDER, dustInfo, genreList, plantState } from '../lib.js'
 import { sb } from '../supabase.js'
 import { Coin } from '../ui.jsx'
 import { pushSupported, enablePush } from '../push.js'
@@ -51,13 +51,20 @@ export function Home({ ctx }) {
   const [sel, setSel] = useState(null)
   const actions = useArrange(ctx)
   const mine = ctx.items.filter((i) => i.kind === kind)
-  const entries = buildEntries(ctx.items, ctx.decos, kind)
+  const [genre, setGenre] = useState(null)
+  useEffect(() => { setGenre(null) }, [kind, editing])
+  const present = GENRES.filter(([k]) => mine.some((i) => genreList(i.genre).includes(k)))
+  const allEntries = buildEntries(ctx.items, ctx.decos, kind)
+  const entries = genre && !editing ? allEntries.filter((e) => e.type === 'deco' || genreList(e.ref.genre).includes(genre)) : allEntries
   const year = new Date().getFullYear()
   const rated = mine.filter((i) => i.stars)
   const avg = rated.length ? (rated.reduce((a, i) => a + Number(i.stars), 0) / rated.length).toFixed(1).replace('.', ',') : null
   const swipe = useSwipe(kind, (k) => { if (cleaning) return; setSel(null); setKind(k) })
   useEffect(() => { ctx.setHideNav(editing); return () => ctx.setHideNav(false) }, [editing])
-  const selEntry = entries.find((e) => e.eid === sel)
+  const selIdx = entries.findIndex((e) => e.eid === sel)
+  const selEntry = entries[selIdx]
+  const prevEntry = entries[selIdx - 1]
+  const canStack = selEntry?.type === 'deco' && prevEntry?.type === 'item' && !!prevEntry.ref.lying
   const dust = dustInfo(ctx.profile.last_visit)
   const [cleaning, setCleaning] = useState(false)
   const [askPush, setAskPush] = useState(() => pushSupported() && Notification.permission === 'default' && (isStandalone() || /android/i.test(navigator.userAgent)) && !localStorage.getItem('teca.pushask') && false)
@@ -113,6 +120,12 @@ export function Home({ ctx }) {
             : <button className="chip on" onClick={startClean}>limpiar · {dust.cost} <Coin s={14} ring="#E6F04A" /></button>}
         </div>
       )}
+      {!editing && present.length > 1 && (
+        <div className="genrebar" role="group" aria-label="Filtrar por género">
+          <button className={`chip ${!genre ? 'on' : ''}`} onClick={() => setGenre(null)}>todos</button>
+          {present.map(([k, e, l]) => <button key={k} className={`chip ${genre === k ? 'on' : ''}`} onClick={() => setGenre(genre === k ? null : k)}>{e} {l}</button>)}
+        </div>
+      )}
       <div style={{ height: 14 }} />
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
@@ -124,7 +137,7 @@ export function Home({ ctx }) {
           <p className="body" style={{ marginTop: 8, fontSize: 14 }}>Cargala con el + y sumá tus primeros tecoins.</p>
         </div>
       )}
-      {editing && <><Toolbar ctx={ctx} actions={actions} entry={selEntry} onClose={() => setSel(null)} /><Tray ctx={ctx} actions={actions} kind={kind} /></>}
+      {editing && <><Toolbar ctx={ctx} actions={actions} entry={selEntry} canStack={canStack} onClose={() => setSel(null)} /><Tray ctx={ctx} actions={actions} kind={kind} /></>}
     </div>
   )
 }

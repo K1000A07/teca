@@ -58,9 +58,10 @@ textarea.input { font-weight: 300; font-size: 15px; line-height: 1.45; min-heigh
 
 /* Estante */
 .case { position: relative; margin: 0 auto; width: calc(100% - 40px); padding: 18px 0 4px; border-radius: 6px; display: flex; flex-direction: column; gap: 22px; }
-.case.k0 { background: var(--white); box-shadow: inset 0 0 0 1.5px var(--ink); }
-.case.k1 { background: var(--cel); }
-.case.k2 { background: var(--liml); }
+.case.k0, .case.k1, .case.k2 { background: var(--white); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.genrebar { display: flex; gap: 6px; overflow-x: auto; padding: 12px 20px 2px; scrollbar-width: none; }
+.genrebar::-webkit-scrollbar { display: none; }
+.genrebar .chip { padding: 6px 11px; font-size: 12.5px; }
 .shelfrow { display: flex; align-items: flex-end; gap: 1px; padding: 0 10px; min-height: 60px; }
 .plank { position: relative; height: 16px; background: linear-gradient(180deg, #D49A5E 0, #B9773F 30%, #7E4E24 100%); border-radius: 2px; box-shadow: 0 10px 14px -8px rgba(60,30,10,.45); }
 .plank::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(90,50,20,0) 0, rgba(90,50,20,.18) 2px, rgba(90,50,20,0) 5px, rgba(90,50,20,0) 23px); mix-blend-mode: multiply; }

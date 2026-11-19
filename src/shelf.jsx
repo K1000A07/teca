@@ -4,7 +4,7 @@ import { AsteriskMark } from './ui.jsx'
 import { DecoArt, SHELF_STYLES } from './decos.jsx'
 import { Dust } from './dust.jsx'
 
-const DECO_W = { plantita: 41, taza: 32, lampara: 44, portarretrato: 50 }
+const DECO_W = { plantita: 41, taza: 32, lampara: 44, portarretrato: 50, cartelera: 66 }
 const spineW = (it) => Math.round(spineSize(it).wcm * PPC * 2.2)
 const spineH = (it) => Math.round(spineSize(it).hcm * PPC)
 
@@ -22,14 +22,15 @@ function toBlocks(entries) {
   for (const e of entries) {
     const last = blocks[blocks.length - 1]
     if (e.type === 'item' && e.ref.lying) {
-      if (last?.type === 'pile' && last.entries.length < 5) last.entries.push(e)
+      if (last?.type === 'pile' && last.entries.length < 5 && !last.top) last.entries.push(e)
       else blocks.push({ type: 'pile', entries: [e] })
-    } else blocks.push({ type: 'one', entries: [e] })
+    } else if (e.type === 'deco' && e.ref.stacked && last?.type === 'pile' && !last.top) last.top = e
+    else blocks.push({ type: 'one', entries: [e] })
   }
   return blocks
 }
 function blockWidth(b) {
-  if (b.type === 'pile') return Math.max(...b.entries.map((e) => spineH(e.ref))) + 6
+  if (b.type === 'pile') return Math.max(...b.entries.map((e) => spineH(e.ref)), b.top ? DECO_W[b.top.ref.kind] || 40 : 0) + 6
   const e = b.entries[0]
   if (e.type === 'deco') return (DECO_W[e.ref.kind] || 40) + 6
   return spineW(e.ref) + 1 + (e.ref.tilt ? 12 : 0)
@@ -129,8 +130,9 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
     )
   }
   const Marker = () => <div style={{ flex: 'none', width: 4, height: 96, background: '#E6F04A', boxShadow: '0 0 0 1.5px #141210', borderRadius: 2, margin: '0 2px' }} />
-  const markBefore = (b) => drag?.target && !drag.after && b.entries.some((e) => e.eid === drag.target)
-  const markAfter = (b) => drag?.target && drag.after && b.entries.some((e) => e.eid === drag.target)
+  const inBlock = (b, id) => b.entries.some((e) => e.eid === id) || b.top?.eid === id
+  const markBefore = (b) => drag?.target && !drag.after && inBlock(b, drag.target)
+  const markAfter = (b) => drag?.target && drag.after && inBlock(b, drag.target)
 
   return (
     <div className={`case k${k}`} style={{ width }}>
@@ -142,7 +144,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
               <span key={b.entries[0].eid} style={{ display: 'contents' }}>
                 {markBefore(b) && <Marker />}
                 {b.type === 'pile'
-                  ? <div style={{ display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', flex: 'none', margin: '0 3px' }}>{b.entries.map((e) => ent(e, <Lying it={e.ref} />))}</div>
+                  ? <div style={{ display: 'flex', flexDirection: 'column-reverse', alignItems: 'center', flex: 'none', margin: '0 3px' }}>{b.entries.map((e) => ent(e, <Lying it={e.ref} />))}{b.top && ent(b.top, <DecoArt d={b.top.ref} />, { marginBottom: -1 })}</div>
                   : b.entries[0].type === 'deco'
                     ? ent(b.entries[0], <DecoArt d={b.entries[0].ref} />, { margin: '0 3px' })
                     : ent(b.entries[0], <Standing it={b.entries[0].ref} isNew={b.entries[0].eid === newest} />)}

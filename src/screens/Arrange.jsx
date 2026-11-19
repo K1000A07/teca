@@ -32,8 +32,8 @@ export function useArrange(ctx) {
     await sb.from('user_decos').update({ teca: kind, position }).eq('id', d.id)
   }
   async function unplace(d) {
-    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: null, position: null } : x)))
-    await sb.from('user_decos').update({ teca: null, position: null }).eq('id', d.id)
+    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: null, position: null, stacked: false } : x)))
+    await sb.from('user_decos').update({ teca: null, position: null, stacked: false }).eq('id', d.id)
   }
   async function buy(kind, placeIn) {
     const { data, error } = await sb.rpc('buy_deco', { p_kind: kind })
@@ -59,7 +59,20 @@ export function useArrange(ctx) {
       await sb.from('user_decos').update({ photo_url: url }).eq('id', d.id)
     } catch { say('No se pudo subir la foto') }
   }
-  return { reorder, orient, place, unplace, buy, setStyle, setPhoto }
+  async function patchDeco(d, patch) {
+    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, ...patch } : x)))
+    const { error } = await sb.from('user_decos').update(patch).eq('id', d.id)
+    if (error) say('No se pudo guardar')
+  }
+  const stack = (d, on) => patchDeco(d, { stacked: on })
+  function writeSign(d) {
+    const cur = (d.text || 'HOY\nVEMOS\nUNA PELI').split('\n').join(' / ')
+    const t = prompt('¿Qué dice tu cartelera? Separá los renglones con /  (hasta 4)', cur)
+    if (t == null) return
+    const text = t.split('/').map((x) => x.trim().toUpperCase().slice(0, 14)).filter(Boolean).slice(0, 4).join('\n')
+    patchDeco(d, { text: text || null })
+  }
+  return { reorder, orient, place, unplace, buy, setStyle, setPhoto, stack, writeSign }
 }
 
 function PriceChip({ n, state }) {
@@ -112,7 +125,7 @@ export function Tray({ ctx, actions, kind }) {
   )
 }
 
-export function Toolbar({ ctx, actions, entry, onClose }) {
+export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
   const fileRef = useRef()
   if (!entry) return null
   const btn = (on, ic, label, onClick) => (
@@ -134,6 +147,8 @@ export function Toolbar({ ctx, actions, entry, onClose }) {
   const d = entry.ref
   return (
     <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 196, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
+      {(canStack || d.stacked) && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, d.stacked ? 'bajar' : 'arriba', () => actions.stack(d, !d.stacked))}
+      {d.kind === 'cartelera' && btn(false, <span style={{ fontWeight: 800, fontSize: 15, lineHeight: '20px' }}>Aa</span>, 'escribir', () => actions.writeSign(d))}
       {d.kind === 'portarretrato' && <>{btn(false, <Icon n="photo" s={20} />, d.photo_url ? 'cambiar foto' : 'poner foto', () => fileRef.current.click())}<input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && actions.setPhoto(d, e.target.files[0])} /></>}
       {btn(false, <Icon n="x" s={20} />, 'sacar', () => { actions.unplace(d); onClose() })}
       {btn(false, <Icon n="check" s={20} />, 'listo', onClose)}
