@@ -5,6 +5,9 @@ import { DECOS, DECO_CATS, DecoArt, placeable, decoName, takesPhoto, takesText }
 import { shrinkImage } from './Auth.jsx'
 
 // Acciones del modo acomodar y de la tienda
+// Si falta correr un SQL en Supabase, la base no conoce las columnas nuevas
+const dbMsg = (e, fallback) => (e && (e.code === '42703' || e.code === 'PGRST204' || /column/i.test(e.message || '')) ? 'No se guardó: falta actualizar la base de datos' : fallback)
+
 export function useArrange(ctx) {
   const { uid, items, setItems, decos, setDecos, say } = ctx
   async function reorder(eids) {
@@ -29,7 +32,8 @@ export function useArrange(ctx) {
   async function place(d, kind) {
     const position = maxPos(kind) + 10
     setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: kind, position, shelf_row: null, shelf_x: null, stacked: false } : x)))
-    await sb.from('user_decos').update({ teca: kind, position, shelf_row: null, shelf_x: null, stacked: false }).eq('id', d.id)
+    const { error } = await sb.from('user_decos').update({ teca: kind, position, shelf_row: null, shelf_x: null, stacked: false }).eq('id', d.id)
+    if (error) say(dbMsg(error, 'No se pudo guardar la deco'))
   }
   async function unplace(d) {
     setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: null, position: null, stacked: false, shelf_row: null, shelf_x: null } : x)))
@@ -62,7 +66,7 @@ export function useArrange(ctx) {
   async function patchDeco(d, patch) {
     setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, ...patch } : x)))
     const { error } = await sb.from('user_decos').update(patch).eq('id', d.id)
-    if (error) say('No se pudo guardar')
+    if (error) say(dbMsg(error, 'No se pudo guardar'))
   }
   const stack = (d, on) => patchDeco(d, on ? { stacked: true } : { stacked: false, shelf_row: null, shelf_x: null })
   // Mover cosas a un lugar libre del estante (ups: [{ eid, row, x, stacked?, position? }])
@@ -80,7 +84,8 @@ export function useArrange(ctx) {
       ...Object.entries(it).map(([id, p]) => sb.from('items').update(p).eq('id', id)),
       ...Object.entries(de).map(([id, p]) => sb.from('user_decos').update(p).eq('id', id)),
     ])
-    if (res.some((r) => r.error)) say('No se pudo guardar dónde va')
+    const err = res.find((r) => r.error)?.error
+    if (err) say(dbMsg(err, 'No se pudo guardar dónde va'))
   }
   function writeSign(d) {
     const cur = (d.text || 'HOY\nVEMOS\nUNA PELI').split('\n').join(' / ')

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { firstTeca } from './browse.jsx'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sb } from './supabase.js'
 import { Nav, Toast } from './ui.jsx'
 import { Intro, Login, ProfileSetup } from './screens/Auth.jsx'
@@ -35,6 +36,7 @@ export default function App() {
   const [sheet, setSheet] = useState(null)
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')
+  const pickedTeca = useRef(false)
   const [tour, setTour] = useState(false)
   const [askPush, setAskPush] = useState(false)
   const [decos, setDecos] = useState([])
@@ -135,6 +137,7 @@ export default function App() {
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
 
+  useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>

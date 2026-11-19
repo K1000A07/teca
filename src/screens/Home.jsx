@@ -3,6 +3,7 @@ import { CoinPill, Icon, Teca, useWidth } from '../ui.jsx'
 import { Shelf, buildEntries } from '../shelf.jsx'
 import { Tray, Toolbar, useArrange } from './Arrange.jsx'
 import { isPlant } from '../decos.jsx'
+import { BrowseBar, ListView, useBrowse } from '../browse.jsx'
 import { GENRES, KINDS, KIND_ORDER, dustInfo, genreList, plantState } from '../lib.js'
 import { sb } from '../supabase.js'
 import { Coin } from '../ui.jsx'
@@ -52,11 +53,11 @@ export function Home({ ctx }) {
   const [sel, setSel] = useState(null)
   const actions = useArrange(ctx)
   const mine = ctx.items.filter((i) => i.kind === kind)
-  const [genre, setGenre] = useState(null)
-  useEffect(() => { setGenre(null) }, [kind, editing])
-  const present = GENRES.filter(([k]) => mine.some((i) => genreList(i.genre).includes(k)))
+  const b = useBrowse(ctx.items, kind)
+  useEffect(() => { b.reset() }, [kind])
+  useEffect(() => { if (editing) { b.reset(); b.setView('shelf'); b.setOpen(false) } }, [editing])
   const allEntries = buildEntries(ctx.items, ctx.decos, kind)
-  const entries = genre && !editing ? allEntries.filter((e) => e.type === 'deco' || genreList(e.ref.genre).includes(genre)) : allEntries
+  const entries = b.active && !editing ? allEntries.filter((e) => e.type === 'item' && b.match(e.ref)) : allEntries
   const year = new Date().getFullYear()
   const rated = mine.filter((i) => i.stars)
   const avg = rated.length ? (rated.reduce((a, i) => a + Number(i.stars), 0) / rated.length).toFixed(1).replace('.', ',') : null
@@ -122,17 +123,13 @@ export function Home({ ctx }) {
             : <button className="chip on" onClick={startClean}>limpiar · {dust.cost} <Coin s={14} ring="#E6F04A" /></button>}
         </div>
       )}
-      {!editing && present.length > 1 && (
-        <div className="genrebar" role="group" aria-label="Filtrar por género">
-          <button className={`chip ${!genre ? 'on' : ''}`} onClick={() => setGenre(null)}>todos</button>
-          {present.map(([k, e, l]) => <button key={k} className={`chip ${genre === k ? 'on' : ''}`} onClick={() => setGenre(genre === k ? null : k)}>{e} {l}</button>)}
-        </div>
-      )}
+      {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} />}
       <div style={{ height: 14 }} />
+      {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} empty="No hay nada con esa búsqueda." /> :
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
-        onLongPress={(e) => { setEditing(true); setSel(e) }} onMove={actions.move} onFull={ctx.say} packed={!!genre} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
-        onDecoTap={(d) => isPlant(d.kind) && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>
+        onLongPress={(e) => { setEditing(true); setSel(e) }} onMove={actions.move} onFull={ctx.say} packed={b.active} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
+        onDecoTap={(d) => isPlant(d.kind) && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>}
       {!mine.length && !editing && (
         <div className="pad" style={{ textAlign: 'center', marginTop: 22 }}>
           <div className="h" style={{ fontSize: 22, letterSpacing: '-0.035em' }}>{kind === 'book' ? '¿Qué fue lo último que leíste?' : kind === 'movie' ? '¿Qué fue la última peli que viste?' : '¿Qué serie terminaste?'}</div>

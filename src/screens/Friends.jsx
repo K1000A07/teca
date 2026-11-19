@@ -1,3 +1,4 @@
+import { BrowseBar, ListView, useBrowse, firstTeca } from '../browse.jsx'
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Avatar, Back, Coin, Cover, Icon, Sheet, Stars, Teca, useWidth } from '../ui.jsx'
@@ -128,8 +129,13 @@ export function FriendTeca({ ctx, person: initial }) {
   useEffect(() => {
     sb.from('profiles').select('*').eq('id', initial.id).maybeSingle().then(({ data }) => data && setPerson(data))
     sb.from('user_decos').select('*').eq('user_id', initial.id).then(({ data }) => setDecos(data || []))
-    sb.from('items').select('*').eq('user_id', initial.id).order('position', { ascending: true, nullsFirst: false }).order('created_at').then(({ data }) => setItems(data || []))
+    Promise.all([
+      sb.from('profiles').select('*').eq('id', initial.id).maybeSingle(),
+      sb.from('items').select('*').eq('user_id', initial.id).order('position', { ascending: true, nullsFirst: false }).order('created_at'),
+    ]).then(([p, { data }]) => { setItems(data || []); setKind(firstTeca(data, p.data?.default_teca)) })
   }, [initial.id])
+  const b = useBrowse(items || [], kind)
+  useEffect(() => { b.reset() }, [kind])
   const swipe = useSwipe(kind, setKind)
   const canSee = isFriend || person.teca_public
   const common = (items || []).filter((i) => ctx.items.some((m) => m.kind === i.kind && m.title.toLowerCase() === i.title.toLowerCase())).length
@@ -159,8 +165,9 @@ export function FriendTeca({ ctx, person: initial }) {
       {action && <div className="pad" style={{ marginTop: 10 }}>{action}</div>}
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />
-        <div style={{ height: 14 }} />
-        {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
+        {items && items.some((i) => i.kind === kind) && <BrowseBar b={b} kind={kind} />}
+        {items && b.view === 'list' && <ListView items={b.shown} kind={kind} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} empty="No hay nada con esa búsqueda." />}
+        {items && b.view !== 'list' && <Shelf packed={b.active} entries={buildEntries(items, decos, kind).filter((e) => !b.active || (e.type === 'item' && b.match(e.ref)))} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
       </>) : (
         <div className="pad" style={{ marginTop: 24 }}>
           <div className="card" style={{ textAlign: 'center', padding: 24 }}>
