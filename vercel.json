@@ -1,6 +1,16 @@
 {
   "rewrites": [
-    { "source": "/regalo/:code", "destination": "/api/invite?code=:code" },
-    { "source": "/((?!api/|assets/|icons/|.*\\..*).*)", "destination": "/index.html" }
+    {
+      "source": "/regalo/:code",
+      "destination": "/api/invite?code=:code"
+    },
+    {
+      "source": "/r/:u",
+      "destination": "/api/ref?u=:u"
+    },
+    {
+      "source": "/((?!api/|assets/|icons/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ]
 }

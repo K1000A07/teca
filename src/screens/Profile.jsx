@@ -35,6 +35,11 @@ export function Profile({ ctx }) {
         <span style={{ flex: 1 }} className="light"><span style={{ color: '#fff' }}>Tecoins · canjear</span></span>
         <span style={{ transform: 'rotate(180deg)', display: 'flex' }}><Icon n="back" s={16} c="#E6F04A" w={2.4} /></span>
       </button>
+      <button onClick={() => { const url = `${location.origin}/r/${ctx.profile.username}`; navigator.share ? navigator.share({ title: 'teca', text: 'Te invito a teca, mi biblioteca de bolsillo. Si te sumás con mi link, los dos ganamos tecoins 📚', url }).catch(() => {}) : (navigator.clipboard.writeText(url), ctx.say('Link copiado')) }} className="row" style={{ width: 'calc(100% - 40px)', margin: '10px 20px 0', padding: '12px 14px', background: 'var(--lim)', borderRadius: 18, border: 0, boxShadow: 'inset 0 0 0 1.5px var(--ink)', textAlign: 'left', gap: 12 }}>
+        <span style={{ fontSize: 24 }}>💌</span>
+        <span style={{ flex: 1 }}><b style={{ fontSize: 15 }}>Invitá amigos y ganá 30 tecoins</b><br /><span style={{ fontWeight: 300, fontSize: 12.5 }}>{(ctx.refs || []).length ? `Ya se sumaron ${(ctx.refs || []).length} con tu link` : 'Compartí tu link personal de teca'}</span></span>
+        <Icon n="share" s={18} w={2} />
+      </button>
       <div className="between pad" style={{ paddingTop: 20, alignItems: 'baseline' }}><h2 className="h" style={{ fontSize: 24 }}>Guardados</h2><span className="light">para después · {ctx.saved.length}</span></div>
       <div className="row" style={{ gap: 6, padding: '10px 20px 4px' }}>
         {[['all', 'todo'], ['book', 'libros'], ['movie', 'pelis'], ['show', 'series']].map(([k, l]) => <button key={k} className={`chip ${filter === k ? 'on' : ''}`} onClick={() => setFilter(k)}>{l}</button>)}
@@ -174,7 +179,7 @@ export function Tecoins({ ctx }) {
         <TG ic="book" t="Libros"><TRow t="Libro corto" sub="Hasta 250 páginas" n={COINS.bookShort} /><TRow t="Libro largo" sub="Más de 250 páginas" n={COINS.bookLong} /><TRow t="En papel" sub="Si lo leíste en ebook, no suma extra" n={COINS.paper} plus /></TG>
         <TG ic="clap" t="Pelis"><TRow t="Estreno" sub="Salió hace menos de un año" n={COINS.movieNew} /><TRow t="De catálogo" sub="Salió hace más de un año" n={COINS.movieCatalog} /></TG>
         <TG ic="tv" t="Series"><TRow t="Serie corta" sub="De 1 a 3 temporadas" n={COINS.showShort} /><TRow t="Serie larga" sub="4 temporadas o más" n={COINS.showLong} /></TG>
-        <TG ic="plus" t="Extras"><TRow t="La viste en el cine" sub="Tiene que estar en cartelera" n={COINS.cinema} plus /><TRow t="Saga completa" sub="Todos los libros, pelis o temporadas" n={COINS.saga} plus /><TRow t="Dejaste una reseña" sub="Lo que opinás, para tus amigos" n={COINS.review} plus /></TG>
+        <TG ic="plus" t="Extras"><TRow t="La viste en el cine" sub="Tiene que estar en cartelera" n={COINS.cinema} plus /><TRow t="Saga completa" sub="Todos los libros, pelis o temporadas" n={COINS.saga} plus /><TRow t="Dejaste una reseña" sub="Lo que opinás, para tus amigos" n={COINS.review} plus /><TRow t="Invitaste a un amigo" sub="Cuando carga su primer título" n={30} plus /></TG>
         <div style={{ marginTop: 18 }}><button className="btn" onClick={() => ctx.go('shop')}>Canjear por decoraciones</button></div>
       </div>
     </div>

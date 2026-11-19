@@ -15,6 +15,8 @@ import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
 try {
+  const rm = location.pathname.match(/^\/r\/([a-z0-9_.]+)/i)
+  if (rm) { localStorage.setItem('teca.ref', rm[1].toLowerCase()); history.replaceState({}, '', '/') }
   const m = location.pathname.match(/^\/regalo\/([a-z0-9-]+)/i)
   const g = m ? m[1] : new URLSearchParams(location.search).get('regalo')
   if (g) { localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/') }
@@ -108,6 +110,16 @@ export default function App() {
       if (data > 0) { setProfile((p) => ({ ...p, bonus_coins: (p.bonus_coins || 0) + data })); setSheet({ t: 'gift', coins: data, from: info?.[0]?.inviter }) }
     })()
   }, [profile?.id])
+  const [refs, setRefs] = useState([])
+  useEffect(() => {
+    if (!profile?.id) return
+    const ref = localStorage.getItem('teca.ref')
+    if (ref) {
+      localStorage.removeItem('teca.ref')
+      sb.rpc('claim_referral', { p_username: ref }).then(({ data }) => { if (data) { loadAll(); say('¡Ya son amigos! Cargá tu primer título y ganan tecoins los dos') } })
+    }
+    sb.from('referrals').select('*').eq('inviter', profile.id).order('created_at', { ascending: false }).then(({ data }) => setRefs(Array.isArray(data) ? data : []))
+  }, [profile?.id])
   const startTour = useCallback(() => { setStack([{ s: 'lib' }]); setTeca('book'); setTimeout(() => setTour(true), 300) }, [])
 
   // ----- navegación con el botón "atrás" del celu -----
@@ -122,7 +134,7 @@ export default function App() {
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
 
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')

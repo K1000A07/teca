@@ -70,7 +70,9 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
     const res = edit ? await sb.from('items').update(row).eq('id', edit.id).select().single() : await sb.from('items').insert(row).select().single()
     setBusy(false)
     if (res.error) return ctx.say('No se pudo guardar: ' + res.error.message)
+    const first = !edit && ctx.items.length === 0
     ctx.setItems((xs) => edit ? xs.map((x) => (x.id === edit.id ? res.data : x)) : [...xs, res.data])
+    if (first) { const before = ctx.profile.bonus_coins || 0; const { data: p } = await sb.from('profiles').select('*').eq('id', ctx.uid).single(); if (p) { ctx.setProfile(p); if ((p.bonus_coins || 0) > before) setTimeout(() => ctx.say(`¡+${p.bonus_coins - before} tecoins de bienvenida por sumarte con un link!`), 1200) } }
     ctx.setTeca(kind)
     if (edit) { ctx.say('Listo, guardado'); onClose() } else setDone(res.data)
   }

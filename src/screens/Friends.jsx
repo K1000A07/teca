@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
-import { Avatar, Back, Cover, Icon, Sheet, Stars, Teca, useWidth } from '../ui.jsx'
+import { Avatar, Back, Coin, Cover, Icon, Sheet, Stars, Teca, useWidth } from '../ui.jsx'
 import { Shelf, buildEntries } from '../shelf.jsx'
 import { KINDS, timeAgo, dustInfo } from '../lib.js'
 import { TopBar, TecaTabs, useSwipe } from './Home.jsx'
@@ -37,7 +37,8 @@ function AddFriend({ ctx, onClose }) {
           </div>) })}
         {q.trim().length >= 2 && !res.length && <p className="body muted" style={{ fontSize: 14 }}>No encontramos a nadie con ese nombre. Pasales el link de teca para que se sumen.</p>}
       </div>
-      <div style={{ marginTop: 16 }}><button className="btn white" onClick={() => { navigator.share ? navigator.share({ title: 'teca', text: 'Sumate a teca, mi biblioteca de bolsillo', url: location.origin }) : (navigator.clipboard.writeText(location.origin), ctx.say('Link copiado')) }}><Icon n="share" s={18} w={2} />Invitar con el link</button></div>
+      <div style={{ marginTop: 16 }}><button className="btn white" onClick={() => { navigator.share ? navigator.share({ title: 'teca', text: 'Te invito a teca, mi biblioteca de bolsillo. Si te sumás con mi link, los dos ganamos tecoins 📚', url: `${location.origin}/r/${ctx.profile.username}` }) : (navigator.clipboard.writeText(`${location.origin}/r/${ctx.profile.username}`), ctx.say('Link copiado')) }}><Icon n="share" s={18} w={2} />Invitar con mi link · +30 <Coin s={16} /></button></div>
+      <p className="body muted" style={{ fontSize: 12.5, textAlign: 'center', marginTop: 8 }}>Cuando alguien se suma con tu link y carga su primer título, vos ganás 30 tecoins y esa persona 20.</p>
     </Sheet>
   )
 }
@@ -176,6 +177,7 @@ export function Notifications({ ctx }) {
   async function accept(f) { await sb.from('friendships').update({ status: 'accepted' }).eq('id', f.id); ctx.say('¡Ahora son amigos!'); ctx.reload() }
   async function reject(f) { await sb.from('friendships').delete().eq('id', f.id); ctx.reload() }
   const recent = ctx.feed.slice(0, 15)
+  const refs = ctx.refs || []
   return (
     <div>
       <Back onBack={ctx.back} title="Novedades" />
@@ -184,11 +186,16 @@ export function Notifications({ ctx }) {
           <Avatar p={p} s={42} /><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name}</b> quiere ser tu amigo<div className="light" style={{ marginTop: 4 }}>{timeAgo(f.created_at)}</div></div>
           <button className="chip lim" onClick={() => accept(f)}>aceptar</button><button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={() => reject(f)}>no</button>
         </div>) })}
+      {refs.map((r) => { const p = ctx.people[r.new_user]; return (
+        <div key={r.new_user} className="listrow" style={{ background: r.rewarded ? '#fff' : 'var(--liml)' }}>
+          <Avatar p={p} s={42} /><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name || 'Alguien'}</b> se sumó con tu link<div className="light" style={{ marginTop: 4 }}>{r.rewarded ? `ganaste 30 tecoins · ${timeAgo(r.created_at)}` : 'cuando cargue su primer título ganás 30'}</div></div>
+          {r.rewarded && <span className="row" style={{ gap: 4, fontWeight: 800 }}>+30 <Coin s={16} /></span>}
+        </div>) })}
       {recent.map((it) => { const p = ctx.people[it.user_id]; return (
         <button key={it.id} className="listrow" style={{ width: '100%', border: 0, borderBottom: '1px solid var(--line)', background: 'none', textAlign: 'left' }} onClick={() => ctx.openSheet({ t: 'detail', it })}>
           <Avatar p={p} s={42} /><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name}</b> sumó <b style={{ fontWeight: 800 }}>{it.title}</b> a su {KINDS[it.kind].teca}teca<div className="light" style={{ marginTop: 4 }}>{timeAgo(it.created_at)}</div></div>
         </button>) })}
-      {!ctx.incoming.length && !recent.length && <p className="pad body muted">No hay novedades por ahora.</p>}
+      {!ctx.incoming.length && !recent.length && !refs.length && <p className="pad body muted">No hay novedades por ahora.</p>}
     </div>
   )
 }

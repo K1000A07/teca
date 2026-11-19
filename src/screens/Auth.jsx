@@ -28,13 +28,15 @@ function InviteBanner() {
   const [info, setInfo] = useState(null)
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
+    const ref = localStorage.getItem('teca.ref')
     if (code) sb.rpc('invite_info', { p_code: code }).then(({ data }) => { if (data?.[0]?.valid) setInfo(data[0]) })
+    else if (ref) sb.rpc('ref_info', { p_username: ref }).then(({ data }) => { if (data?.[0]) setInfo({ inviter: data[0].name, coins: 20, ref: true }) })
   }, [])
   if (!info) return null
   return (
     <div className="row" style={{ margin: '0 20px 18px', padding: '12px 14px', background: 'var(--lim)', borderRadius: 18, boxShadow: 'inset 0 0 0 1.5px var(--ink)', gap: 12 }}>
       <span style={{ fontSize: 26 }}>🎁</span>
-      <div style={{ fontSize: 14, lineHeight: 1.35 }}><b>{info.inviter === 'Alguien' ? 'Te regalan' : `${info.inviter} te regala`} {info.coins} tecoins.</b><br /><span style={{ fontWeight: 300 }}>Creá tu cuenta para recibirlos.</span></div>
+      <div style={{ fontSize: 14, lineHeight: 1.35 }}>{info.ref ? <><b>{info.inviter} te invita a teca.</b><br /><span style={{ fontWeight: 300 }}>Creá tu cuenta y arrancás con 20 tecoins.</span></> : <><b>{info.inviter === 'Alguien' ? 'Te regalan' : `${info.inviter} te regala`} {info.coins} tecoins.</b><br /><span style={{ fontWeight: 300 }}>Creá tu cuenta para recibirlos.</span></>}</div>
     </div>
   )
 }
