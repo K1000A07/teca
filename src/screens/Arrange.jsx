@@ -28,12 +28,12 @@ export function useArrange(ctx) {
   const maxPos = (kind) => Math.max(0, ...items.filter((i) => i.kind === kind).map((i) => i.position || 0), ...decos.filter((d) => d.teca === kind).map((d) => d.position || 0))
   async function place(d, kind) {
     const position = maxPos(kind) + 10
-    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: kind, position } : x)))
-    await sb.from('user_decos').update({ teca: kind, position }).eq('id', d.id)
+    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: kind, position, shelf_row: null, shelf_x: null, stacked: false } : x)))
+    await sb.from('user_decos').update({ teca: kind, position, shelf_row: null, shelf_x: null, stacked: false }).eq('id', d.id)
   }
   async function unplace(d) {
-    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: null, position: null, stacked: false } : x)))
-    await sb.from('user_decos').update({ teca: null, position: null, stacked: false }).eq('id', d.id)
+    setDecos((xs) => xs.map((x) => (x.id === d.id ? { ...x, teca: null, position: null, stacked: false, shelf_row: null, shelf_x: null } : x)))
+    await sb.from('user_decos').update({ teca: null, position: null, stacked: false, shelf_row: null, shelf_x: null }).eq('id', d.id)
   }
   async function buy(kind, placeIn) {
     const { data, error } = await sb.rpc('buy_deco', { p_kind: kind })
@@ -64,7 +64,24 @@ export function useArrange(ctx) {
     const { error } = await sb.from('user_decos').update(patch).eq('id', d.id)
     if (error) say('No se pudo guardar')
   }
-  const stack = (d, on) => patchDeco(d, { stacked: on })
+  const stack = (d, on) => patchDeco(d, on ? { stacked: true } : { stacked: false, shelf_row: null, shelf_x: null })
+  // Mover cosas a un lugar libre del estante (ups: [{ eid, row, x, stacked?, position? }])
+  async function move(ups) {
+    const it = {}, de = {}
+    for (const u of ups) {
+      const patch = { shelf_row: u.row, shelf_x: u.x }
+      if (u.stacked !== undefined) patch.stacked = u.stacked
+      if (u.position !== undefined && u.position !== null) patch.position = u.position
+      if (u.eid.startsWith('i:')) it[u.eid.slice(2)] = patch; else de[u.eid.slice(2)] = patch
+    }
+    setItems((xs) => xs.map((x) => (it[x.id] ? { ...x, ...it[x.id] } : x)))
+    setDecos((xs) => xs.map((x) => (de[x.id] ? { ...x, ...de[x.id] } : x)))
+    const res = await Promise.all([
+      ...Object.entries(it).map(([id, p]) => sb.from('items').update(p).eq('id', id)),
+      ...Object.entries(de).map(([id, p]) => sb.from('user_decos').update(p).eq('id', id)),
+    ])
+    if (res.some((r) => r.error)) say('No se pudo guardar dónde va')
+  }
   function writeSign(d) {
     const cur = (d.text || 'HOY\nVEMOS\nUNA PELI').split('\n').join(' / ')
     const t = prompt('¿Qué dice tu cartelera? Separá los renglones con /  (hasta 4)', cur)
@@ -72,7 +89,7 @@ export function useArrange(ctx) {
     const text = t.split('/').map((x) => x.trim().toUpperCase().slice(0, 14)).filter(Boolean).slice(0, 4).join('\n')
     patchDeco(d, { text: text || null })
   }
-  return { reorder, orient, place, unplace, buy, setStyle, setPhoto, stack, writeSign }
+  return { reorder, orient, place, unplace, buy, setStyle, setPhoto, stack, writeSign, move }
 }
 
 function PriceChip({ n, state }) {
@@ -159,7 +176,7 @@ export function Toolbar({ ctx, actions, entry, onClose, onStack }) {
   const d = entry.ref
   return (
     <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 250, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
-      {onStack && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, d.stacked ? 'bajar' : 'arriba', () => onStack(d))}
+      {onStack && d.stacked && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, 'bajar', () => onStack(d))}
       {takesText(d.kind) && btn(false, <span style={{ fontWeight: 800, fontSize: 15, lineHeight: '20px' }}>Aa</span>, 'escribir', () => actions.writeSign(d))}
       {takesPhoto(d.kind) && <>{btn(false, <Icon n="photo" s={20} />, d.photo_url ? 'cambiar foto' : 'poner foto', () => fileRef.current.click())}<input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && actions.setPhoto(d, e.target.files[0])} /></>}
       {btn(false, <Icon n="x" s={20} />, 'sacar', () => { actions.unplace(d); onClose() })}

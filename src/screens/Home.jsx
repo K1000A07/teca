@@ -65,27 +65,7 @@ export function Home({ ctx }) {
   const selIdx = entries.findIndex((e) => e.eid === sel)
   const selEntry = entries[selIdx]
 
-  // Subir una deco arriba de la pila de libros acostados más cercana (o bajarla)
-  async function stackSel(d) {
-    if (d.stacked) return actions.stack(d, false)
-    const ids = allEntries.map((e) => e.eid)
-    const me = ids.indexOf('d:' + d.id)
-    const runs = []
-    allEntries.forEach((e, i) => {
-      if (e.type !== 'item' || !e.ref.lying) return
-      const last = runs[runs.length - 1]
-      if (last && last.end === i - 1 && i - last.start < 5) last.end = i
-      else runs.push({ start: i, end: i })
-    })
-    const free = runs.filter((r) => { const n = allEntries[r.end + 1]; return !(n?.type === 'deco' && n.ref.stacked && n.eid !== 'd:' + d.id) })
-    if (!free.length) return ctx.say(runs.length ? 'Todas tus pilas ya tienen algo arriba' : 'Primero acostá un libro: tocalo y elegí "acostado"')
-    const best = free.reduce((a, r) => (Math.abs(r.end - me) < Math.abs(a.end - me) ? r : a))
-    const target = allEntries[best.end].eid
-    const rest = ids.filter((x) => x !== 'd:' + d.id)
-    rest.splice(rest.indexOf(target) + 1, 0, 'd:' + d.id)
-    await actions.reorder(rest)
-    await actions.stack(d, true)
-  }
+  const stackSel = (d) => actions.stack(d, false)
   const done = () => { setEditing(false); setSel(null) }
   const dust = dustInfo(ctx.profile.last_visit)
   const [cleaning, setCleaning] = useState(false)
@@ -123,7 +103,7 @@ export function Home({ ctx }) {
         <div className="top"><h1 className="h" style={{ fontSize: 30 }}>Acomodando</h1></div>
       ) : <TopBar title={<Teca pre={`Mi ${KINDS[kind].teca}`} />} ctx={ctx} />}
       <div className="pad between" style={{ marginTop: 2 }}>
-        <span className="light">{editing ? 'Arrastrá para mover · tocá para cambiarlo' : mine.length ? `${mine.length} ${mine.length === 1 ? KINDS[kind].label : KINDS[kind].plural}${avg ? ` · ★ ${avg}` : ''} · ${year}` : 'Todavía está vacía'}</span>
+        <span className="light">{editing ? 'Arrastrá a donde quieras' : mine.length ? `${mine.length} ${mine.length === 1 ? KINDS[kind].label : KINDS[kind].plural}${avg ? ` · ★ ${avg}` : ''} · ${year}` : 'Todavía está vacía'}</span>
         {!editing && (mine.length > 0 || ctx.decos.length > 0) && <button className="linkbtn" style={{ fontSize: 12.5 }} onClick={() => setEditing(true)}>Acomodar</button>}
       </div>
       <TecaTabs kind={kind} setKind={(k) => { setSel(null); setKind(k) }} />
@@ -151,7 +131,7 @@ export function Home({ ctx }) {
       <div style={{ height: 14 }} />
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
-        onLongPress={(e) => { setEditing(true); setSel(e) }} onReorder={actions.reorder} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
+        onLongPress={(e) => { setEditing(true); setSel(e) }} onMove={actions.move} onFull={ctx.say} packed={!!genre} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
         onDecoTap={(d) => isPlant(d.kind) && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>
       {!mine.length && !editing && (
         <div className="pad" style={{ textAlign: 'center', marginTop: 22 }}>
