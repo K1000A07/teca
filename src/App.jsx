@@ -9,6 +9,7 @@ import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
 import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
 import { AdminApp } from './screens/Admin.jsx'
+import { PushPrompt, shouldAskPush } from './screens/PushPrompt.jsx'
 import { Shop } from './screens/Arrange.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
@@ -33,6 +34,7 @@ export default function App() {
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')
   const [tour, setTour] = useState(false)
+  const [askPush, setAskPush] = useState(false)
   const [decos, setDecos] = useState([])
   const [spent, setSpent] = useState(0)
   const [hideNav, setHideNav] = useState(false)
@@ -90,8 +92,12 @@ export default function App() {
     if (!profile?.id) return
     sb.rpc('touch_visit').then(({ data, error }) => { if (!error && data) setProfile((p) => (p.last_visit === data ? p : { ...p, last_visit: data })) })
   }, [profile?.id])
-  useEffect(() => { if (profile && uid && !localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400) }, [profile?.id, uid])
-  const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }) }, [uid])
+  useEffect(() => {
+    if (!profile || !uid) return
+    if (!localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400)
+    else if (shouldAskPush()) setTimeout(() => setAskPush(true), 900)
+  }, [profile?.id, uid])
+  const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid])
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return
@@ -141,6 +147,7 @@ export default function App() {
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
       {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} from={sheet.from} onClose={() => setSheet(null)} />}
       {tour && !sheet && stack.length === 1 && <Tutorial onDone={endTour} />}
+      {askPush && !tour && !sheet && <PushPrompt uid={uid} say={say} onClose={() => setAskPush(false)} />}
       <Toast msg={toast} />
     </div>
   )

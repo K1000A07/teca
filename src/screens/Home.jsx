@@ -60,7 +60,7 @@ export function Home({ ctx }) {
   const selEntry = entries.find((e) => e.eid === sel)
   const dust = dustInfo(ctx.profile.last_visit)
   const [cleaning, setCleaning] = useState(false)
-  const [askPush, setAskPush] = useState(() => pushSupported() && Notification.permission === 'default' && (isStandalone() || /android/i.test(navigator.userAgent)) && !localStorage.getItem('teca.pushask'))
+  const [askPush, setAskPush] = useState(() => pushSupported() && Notification.permission === 'default' && (isStandalone() || /android/i.test(navigator.userAgent)) && !localStorage.getItem('teca.pushask') && false)
   async function turnOnPush() {
     localStorage.setItem('teca.pushask', '1'); setAskPush(false)
     try { if (await enablePush(ctx.uid)) ctx.say('¡Listo! Te vamos a avisar las novedades') } catch { ctx.say('No se pudieron activar los avisos') }
