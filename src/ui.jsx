@@ -60,7 +60,7 @@ export function Stars({ n = 0, s = 14, onChange }) {
     return (
       <span key={i} style={{ position: 'relative', display: 'inline-block', fontSize: s, lineHeight: 1, color: '#D9D6CF' }}>
         ★
-        {fill > 0 && <span style={{ position: 'absolute', left: 0, top: 0, width: fill === 1 ? '100%' : '50%', overflow: 'hidden', color: '#141210' }}>★</span>}
+        {fill > 0 && <span style={{ position: 'absolute', left: 0, top: 0, width: fill === 1 ? '100%' : '50%', overflow: 'hidden', color: '#F5B62A' }}>★</span>}
         {onChange && <>
           <button type="button" aria-label={`${i - 0.5} estrellas`} onClick={() => onChange(n === i - 0.5 ? 0 : i - 0.5)} style={{ position: 'absolute', left: 0, top: -4, width: '50%', height: 'calc(100% + 8px)', border: 0, background: 'transparent', padding: 0 }} />
           <button type="button" aria-label={`${i} estrellas`} onClick={() => onChange(n === i ? 0 : i)} style={{ position: 'absolute', right: 0, top: -4, width: '50%', height: 'calc(100% + 8px)', border: 0, background: 'transparent', padding: 0 }} />
