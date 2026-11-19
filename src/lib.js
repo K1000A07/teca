@@ -92,7 +92,7 @@ export async function searchTitles(kind, q, author = '') {
       const r = await fetch(`/api/books?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`)
       if (r.ok) {
         const list = await r.json()
-        if (Array.isArray(list)) return list.map(({ categories, ...b }) => ({ ...b, genres: genresFromText(categories || []) }))
+        if (Array.isArray(list) && list.length) return list.map(({ categories, ...b }) => ({ ...b, genres: genresFromText(categories || []) }))
       }
     } catch {}
     // respaldo si el servidor no responde
@@ -156,3 +156,14 @@ export function timeAgo(ts) {
   if (s < 172800) return 'ayer'
   return `hace ${Math.round(s / 86400)} días`
 }
+
+// ----- Polvo y plantitas -----
+const days = (ts) => (ts ? (Date.now() - new Date(ts).getTime()) / 864e5 : 0)
+export function dustInfo(lastVisit) {
+  const d = days(lastVisit)
+  if (d >= 30) return { level: 3, cost: 15, days: Math.floor(d) }
+  if (d >= 15) return { level: 2, cost: 10, days: Math.floor(d) }
+  if (d >= 7) return { level: 1, cost: 5, days: Math.floor(d) }
+  return { level: 0, cost: 0, days: Math.floor(d) }
+}
+export const plantState = (wateredAt) => { const d = days(wateredAt); return d >= 30 ? 'dry' : d >= 14 ? 'wilted' : 'ok' }

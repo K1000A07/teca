@@ -7,10 +7,11 @@ export default async function handler(req, res) {
   const author = String(req.query.author || '').trim()
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800')
   if (q.length < 2 && author.length < 2) return res.status(200).json([])
+  const many = q.length < 2 // solo autor: traemos muchos títulos
   const [gEs, olEs, gAll] = await Promise.all([
-    google(q, author, true).catch(() => []),
-    openLibrary(q, author).catch(() => []),
-    google(q, author, false).catch(() => []),
+    google(q, author, true, many).catch(() => []),
+    openLibrary(q, author, many).catch(() => []),
+    google(q, author, false, many).catch(() => []),
   ])
   const es = [...gEs, ...olEs.filter((r) => r.lang === 'es'), ...gAll.filter((r) => r.lang === 'es')]
   const rest = [...olEs.filter((r) => r.lang !== 'es'), ...gAll.filter((r) => r.lang !== 'es')]
@@ -22,15 +23,15 @@ export default async function handler(req, res) {
     if (seen.has(k)) return false
     seen.add(k); return true
   })
-  res.status(200).json(out.slice(0, 8))
+  res.status(200).json(out.slice(0, many ? 40 : 15))
 }
 
-async function google(q, author, spanish) {
+async function google(q, author, spanish, many) {
   const parts = []
   if (q) parts.push(`intitle:${q}`)
   if (author) parts.push(`inauthor:${author}`)
   const key = process.env.GOOGLE_BOOKS_KEY ? `&key=${process.env.GOOGLE_BOOKS_KEY}` : ''
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parts.join(' '))}&maxResults=20&printType=books&country=AR${spanish ? '&langRestrict=es' : ''}${key}`
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parts.join(' '))}&maxResults=${many ? 40 : 20}&printType=books&country=AR${spanish ? '&langRestrict=es' : ''}${key}`
   const j = await (await fetch(url)).json()
   return (j.items || []).map(({ volumeInfo: v }) => ({
     title: v.subtitle && v.title.length < 18 ? `${v.title}: ${v.subtitle}` : v.title,
@@ -43,9 +44,9 @@ async function google(q, author, spanish) {
   }))
 }
 
-async function openLibrary(q, author) {
+async function openLibrary(q, author, many) {
   const params = new URLSearchParams({
-    lang: 'es', limit: '10',
+    lang: 'es', limit: many ? '40' : '10',
     fields: 'title,author_name,first_publish_year,cover_i,number_of_pages_median,subject,editions,editions.title,editions.language,editions.cover_i,editions.number_of_pages_median,editions.publish_date',
   })
   if (q) params.set('title', q)

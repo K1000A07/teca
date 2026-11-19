@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Avatar, Back, Cover, Icon, Sheet, Stars, Teca, useWidth } from '../ui.jsx'
 import { Shelf, buildEntries } from '../shelf.jsx'
-import { KINDS, timeAgo } from '../lib.js'
+import { KINDS, timeAgo, dustInfo } from '../lib.js'
 import { TopBar, TecaTabs, useSwipe } from './Home.jsx'
 import { Review } from './Detail.jsx'
 
@@ -159,7 +159,7 @@ export function FriendTeca({ ctx, person: initial }) {
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />
         <div style={{ height: 14 }} />
-        {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
+        {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
       </>) : (
         <div className="pad" style={{ marginTop: 24 }}>
           <div className="card" style={{ textAlign: 'center', padding: 24 }}>

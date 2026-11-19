@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { paletteFor, spineSize, PPC } from './lib.js'
 import { AsteriskMark } from './ui.jsx'
 import { DecoArt, SHELF_STYLES } from './decos.jsx'
+import { Dust } from './dust.jsx'
 
 const DECO_W = { plantita: 41, taza: 32, lampara: 44, portarretrato: 50 }
 const spineW = (it) => Math.round(spineSize(it).wcm * PPC * 2.2)
@@ -55,7 +56,7 @@ function Lying({ it }) {
   return <div className="lying" style={{ width: spineH(it), height: h, ...st }}><span>{it.title}</span></div>
 }
 
-export function Shelf({ entries, kind, width, styleName = 'madera', editing, selected, onOpen, onSelect, onLongPress, onReorder, onAdd }) {
+export function Shelf({ entries, kind, width, styleName = 'madera', editing, selected, onOpen, onSelect, onLongPress, onReorder, onAdd, onDecoTap, dust = 0, cleaning, onCleaned }) {
   const inner = width - 20
   const blocks = toBlocks(entries)
   const rows = []
@@ -105,6 +106,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
           const en = entries.find((x) => x.eid === d.eid)
           if (editing) onSelect?.(d.eid)
           else if (en?.type === 'item') onOpen?.(en.ref)
+          else if (en?.type === 'deco') onDecoTap?.(en.ref)
         }
         return null
       })
@@ -132,6 +134,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
 
   return (
     <div className={`case k${k}`} style={{ width }}>
+      <Dust level={editing ? 0 : dust} cleaning={cleaning} onCleaned={onCleaned} />
       {rows.map((r, i) => (
         <div key={i}>
           <div className="shelfrow" style={{ minHeight: r.length ? 0 : 108 }}>

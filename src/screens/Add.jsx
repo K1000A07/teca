@@ -50,7 +50,7 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
   useEffect(() => {
     if (picked || (q.trim().length < 3 && (f.creator || '').trim().length < 3)) { setSugs([]); return }
     setSearching(true)
-    const t = setTimeout(() => searchTitles(kind, q, f.creator).then(setSugs).catch(() => setSugs([])).finally(() => setSearching(false)), 450)
+    const t = setTimeout(() => searchTitles(kind, q, f.creator).then((r) => setSugs(r.slice(0, 40))).catch(() => setSugs([])).finally(() => setSearching(false)), 450)
     return () => clearTimeout(t)
   }, [q, f.creator, kind, picked])
 
@@ -107,14 +107,15 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
           {searching && !sugs.length && <div className="light" style={{ marginTop: 6, letterSpacing: '.1em' }}>Buscando…</div>}
           {picked && f.cover_url && <div className="row" style={{ marginTop: 6, fontSize: 12.5, gap: 8 }}><b>✓ Encontramos {kind === 'book' ? 'la tapa' : 'el afiche'}</b><button className="linkbtn" style={{ fontWeight: 300, fontSize: 12.5 }} onClick={() => set('cover_url', null)}>sacar</button></div>}
           {sugs.length > 0 && (
-            <div style={{ position: 'absolute', left: -90, right: 0, top: 102, background: '#fff', borderRadius: 16, padding: 6, boxShadow: '0 0 0 1.5px var(--ink), 0 16px 30px -12px rgba(0,0,0,.4)', zIndex: 5 }}>
+            <div style={{ position: 'absolute', left: -90, right: 0, top: 102, background: '#fff', borderRadius: 16, padding: 6, boxShadow: '0 0 0 1.5px var(--ink), 0 16px 30px -12px rgba(0,0,0,.4)', zIndex: 5, maxHeight: 360, overflowY: 'auto', overscrollBehavior: 'contain' }}>
+              {sugs.length > 4 && <div className="light" style={{ padding: '4px 10px 6px', letterSpacing: '.12em' }}>{sugs.length} resultados · deslizá para ver más</div>}
               {sugs.map((s, i) => (
                 <button key={i} onClick={() => pick(s)} className="row" style={{ width: '100%', border: 0, background: 'none', padding: '8px 10px', borderRadius: 12, textAlign: 'left' }}>
                   <Cover it={{ ...s, kind }} w={30} />
                   <div style={{ minWidth: 0, flex: 1 }}><div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em' }}>{s.title}{s.lang && s.lang !== 'es' && <span style={{ marginLeft: 6, fontWeight: 300, fontSize: 10.5, padding: '1px 6px', borderRadius: 99, boxShadow: 'inset 0 0 0 1px var(--gris)', verticalAlign: 2 }}>{LANGS[s.lang] || s.lang}</span>}</div><div className="light" style={{ fontSize: 9, letterSpacing: '.12em', marginTop: 2 }}>{[KINDS[kind].label, s.year, s.creator].filter(Boolean).join(' · ')}</div></div>
                 </button>
               ))}
-              <div style={{ padding: '9px 10px 6px', borderTop: '1px solid var(--line)', marginTop: 4, fontWeight: 300, fontSize: 13 }}>¿No está? <button className="linkbtn" style={{ fontSize: 13 }} onClick={() => { setPicked(true); setSugs([]) }}>Cargal{kind === 'book' ? 'o' : 'a'} igual</button></div>
+              <div style={{ position: 'sticky', bottom: -6, background: '#fff', padding: '9px 10px 6px', borderTop: '1px solid var(--line)', marginTop: 4, fontWeight: 300, fontSize: 13 }}>¿No está? <button className="linkbtn" style={{ fontSize: 13 }} onClick={() => { setPicked(true); setSugs([]) }}>Cargal{kind === 'book' ? 'o' : 'a'} igual</button></div>
             </div>
           )}
         </div>

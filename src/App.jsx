@@ -34,6 +34,7 @@ export default function App() {
   const [teca, setTeca] = useState('book')
   const [tour, setTour] = useState(false)
   const [decos, setDecos] = useState([])
+  const [spent, setSpent] = useState(0)
   const [hideNav, setHideNav] = useState(false)
 
   const uid = session?.user?.id
@@ -58,13 +59,15 @@ export default function App() {
 
   const loadAll = useCallback(async () => {
     if (!uid) return
-    const [mine, fr, sv, dc] = await Promise.all([
+    const [mine, fr, sv, dc, sp] = await Promise.all([
       sb.from('items').select('*').eq('user_id', uid).order('position', { ascending: true, nullsFirst: false }).order('created_at'),
       sb.from('friendships').select('*').or(`requester.eq.${uid},addressee.eq.${uid}`),
       sb.from('saved').select('item_id, created_at, items(*)').eq('user_id', uid).order('created_at', { ascending: false }),
       sb.from('user_decos').select('*').eq('user_id', uid),
+      sb.from('coin_spends').select('amount').eq('user_id', uid),
     ])
     setDecos(dc.data || [])
+    setSpent((sp.data || []).reduce((a, x) => a + x.amount, 0))
     setItems(mine.data || [])
     const fs = fr.data || []
     setFriendships(fs)
@@ -82,7 +85,11 @@ export default function App() {
   }, [uid])
 
   useEffect(() => { loadProfile() }, [loadProfile])
-  useEffect(() => { if (profile) loadAll() }, [profile, loadAll])
+  useEffect(() => { if (profile?.id) loadAll() }, [profile?.id, loadAll])
+  useEffect(() => {
+    if (!profile?.id) return
+    sb.rpc('touch_visit').then(({ data, error }) => { if (!error && data) setProfile((p) => (p.last_visit === data ? p : { ...p, last_visit: data })) })
+  }, [profile?.id])
   useEffect(() => { if (profile && uid && !localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400) }, [profile?.id, uid])
   const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }) }, [uid])
   useEffect(() => {
@@ -103,13 +110,13 @@ export default function App() {
   const back = useCallback(() => setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)), [])
   useEffect(() => { const f = () => { setSheet(null); setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)) }; window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f) }, [])
 
-  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0) + (profile?.bonus_coins || 0) - decos.reduce((a, d) => a + (d.price || 0), 0), [items, profile?.bonus_coins, decos])
+  const coins = useMemo(() => items.reduce((a, i) => a + (i.coins || 0), 0) + (profile?.bonus_coins || 0) - decos.reduce((a, d) => a + (d.price || 0), 0) - spent, [items, profile?.bonus_coins, decos, spent])
   const friends = useMemo(() => friendships.filter((f) => f.status === 'accepted').map((f) => people[f.requester === uid ? f.addressee : f.requester]).filter(Boolean), [friendships, people, uid])
   const incoming = useMemo(() => friendships.filter((f) => f.status === 'pending' && f.addressee === uid), [friendships, uid])
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
 
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')

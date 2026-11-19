@@ -1,3 +1,4 @@
+import { plantState } from './lib.js'
 // Decoraciones del estante: catálogo, precios y cómo se dibuja cada una.
 export const DECOS = {
   plantita: { name: 'Plantita', price: 30 },
@@ -13,13 +14,15 @@ export const SHELF_STYLES = {
   celeste: { plank: 'linear-gradient(180deg, #D6E5FA 0, #A9C6F2 40%, #7F9FD0 100%)', grain: false },
 }
 
-export function Plant({ s = 1 }) {
+export function Plant({ s = 1, state = 'ok' }) {
+  const L = state === 'dry' ? ['#8A6A3A', '#9C7A45', '#A88752'] : state === 'wilted' ? ['#6E7D3A', '#86924A', '#97A255'] : ['#1F6A3A', '#2E8A4E', '#3A9A58']
+  const droop = state === 'ok' ? 0 : state === 'wilted' ? 1 : 1.6
   return (
     <div aria-hidden="true" style={{ position: 'relative', flex: 'none', width: 41 * s, height: 64 * s }}>
       <div style={{ position: 'absolute', left: 6 * s, bottom: 0, width: 29 * s, height: 25 * s, background: '#C9633B', borderRadius: `${3 * s}px ${3 * s}px ${8 * s}px ${8 * s}px` }} />
-      <div style={{ position: 'absolute', left: 3 * s, bottom: 21 * s, width: 18 * s, height: 28 * s, background: '#1F6A3A', borderRadius: '50% 0 50% 0', transform: 'rotate(-20deg)' }} />
-      <div style={{ position: 'absolute', left: 18 * s, bottom: 24 * s, width: 18 * s, height: 32 * s, background: '#2E8A4E', borderRadius: '0 50% 0 50%', transform: 'rotate(18deg)' }} />
-      <div style={{ position: 'absolute', left: 12 * s, bottom: 28 * s, width: 14 * s, height: 34 * s, background: '#3A9A58', borderRadius: '50% 50% 0 50%', transform: 'rotate(-4deg)' }} />
+      <div style={{ position: 'absolute', left: 3 * s, bottom: 21 * s, width: 18 * s, height: 28 * s, background: L[0], borderRadius: '50% 0 50% 0', transform: `rotate(${-20 - droop * 40}deg)`, transformOrigin: 'bottom right' }} />
+      <div style={{ position: 'absolute', left: 18 * s, bottom: 24 * s, width: 18 * s, height: 32 * s, background: L[1], borderRadius: '0 50% 0 50%', transform: `rotate(${18 + droop * 40}deg)`, transformOrigin: 'bottom left' }} />
+      <div style={{ position: 'absolute', left: 12 * s, bottom: 28 * s, width: 14 * s, height: 34 * s, background: L[2], borderRadius: '50% 50% 0 50%', transform: `rotate(${-4 - droop * 12}deg) scaleY(${1 - droop * .25})`, transformOrigin: 'bottom center' }} />
     </div>
   )
 }
@@ -52,7 +55,7 @@ export function ShelfBar({ style, s = 1 }) {
 }
 
 export function DecoArt({ d, s = 1 }) {
-  if (d.kind === 'plantita') return <Plant s={s} />
+  if (d.kind === 'plantita') return <Plant s={s} state={d.watered_at ? plantState(d.watered_at) : 'ok'} />
   if (d.kind === 'taza') return <Mug s={s} />
   if (d.kind === 'lampara') return <Lamp s={s} />
   if (d.kind === 'portarretrato') return <Frame s={s} photo={d.photo_url} />
