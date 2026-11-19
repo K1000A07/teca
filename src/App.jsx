@@ -96,10 +96,11 @@ export default function App() {
   }, [profile?.id])
   useEffect(() => {
     if (!profile || !uid) return
-    if (!localStorage.getItem(`teca.tour2.${uid}`)) setTimeout(() => setTour(true), 400)
+    // Cuentas de antes del tutorial nuevo: solo ven la novedad de acomodar
+    if (!localStorage.getItem(`teca.tour2.${uid}`)) setTimeout(() => setTour(new Date(profile.created_at) < new Date('2026-11-19T15:00:00Z') ? 'news' : true), 400)
     else if (shouldAskPush()) setTimeout(() => setAskPush(true), 900)
   }, [profile?.id, uid])
-  const endTour = useCallback(() => { localStorage.setItem(`teca.tour2.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid])
+  const endTour = useCallback(() => { const wasNews = tour === 'news'; localStorage.setItem(`teca.tour2.${uid}`, '1'); setTour(false); if (!isStandalone() && !wasNews) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid, tour])
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return
@@ -158,7 +159,7 @@ export default function App() {
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
       {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} from={sheet.from} onClose={() => setSheet(null)} />}
-      {tour && !sheet && stack.length === 1 && <Tutorial onDone={endTour} />}
+      {tour && !sheet && stack.length === 1 && <Tutorial news={tour === 'news'} onDone={endTour} />}
       {askPush && !tour && !sheet && <PushPrompt uid={uid} say={say} onClose={() => setAskPush(false)} />}
       <Toast msg={toast} />
     </div>

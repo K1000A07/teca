@@ -16,16 +16,21 @@ export const isStandalone = () => window.matchMedia?.('(display-mode: standalone
 let deferred = null
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e })
 
-export function Tutorial({ onDone }) {
+const NEWS = [
+  { target: 'shelf', isNew: true, title: 'Ahora podés acomodar tu teca', text: 'Mantené apretado cualquier título para entrar al modo acomodar: arrastralo a donde quieras, ponelo parado, acostado o inclinado, y sumá decoraciones con tus tecoins.', radius: 8 },
+]
+
+export function Tutorial({ onDone, news }) {
+  const LIST = news ? NEWS : STEPS
   const [i, setI] = useState(0)
   const [rect, setRect] = useState(null)
-  const step = STEPS[i]
+  const step = LIST[i]
   useLayoutEffect(() => {
     const measure = () => { const el = document.querySelector(`[data-tour="${step.target}"]`); setRect(el ? el.getBoundingClientRect() : null) }
     measure(); window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
   }, [step.target])
-  const next = () => (i < STEPS.length - 1 ? setI(i + 1) : onDone())
+  const next = () => (i < LIST.length - 1 ? setI(i + 1) : onDone())
   const pad = 6
   const H = window.innerHeight
   const tipStyle = !rect ? { top: '50%', transform: 'translateY(-50%)' }
@@ -38,12 +43,12 @@ export function Tutorial({ onDone }) {
         ? <div style={{ position: 'fixed', left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: step.radius, boxShadow: '0 0 0 4px #E6F04A, 0 0 0 9999px rgba(20,18,16,.74)', transition: 'all .35s cubic-bezier(.2,.8,.2,1)', pointerEvents: 'none' }} />
         : <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,18,16,.74)' }} />}
       <div style={{ position: 'fixed', left: 'max(24px, calc(50% - 196px))', right: 'max(24px, calc(50% - 196px))', ...tipStyle, background: '#fff', borderRadius: 24, padding: 20, transition: 'all .35s' }}>
-        <div className="between"><span className="light">{i + 1} de {STEPS.length}</span><button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={onDone}>Saltar</button></div>
+        <div className="between">{step.isNew ? <span className="tape" style={{ fontSize: 11, padding: '5px 9px' }}>NUEVO</span> : <span className="light">{i + 1} de {LIST.length}</span>}<button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={onDone}>Saltar</button></div>
         <h2 className="h" style={{ fontSize: 24, marginTop: 10 }}>{step.title}</h2>
         <p className="body" style={{ margin: '8px 0 0', lineHeight: 1.4 }}>{step.text}</p>
         <div className="between" style={{ marginTop: 16 }}>
-          <div className="pagedots" style={{ margin: 0 }}>{STEPS.map((_, k) => <span key={k} className={k === i ? 'on' : ''} />)}</div>
-          <button className="chip lim" style={{ padding: '10px 18px', fontSize: 14 }} onClick={next}>{i === STEPS.length - 1 ? 'Empezar' : 'Siguiente'}</button>
+          <div className="pagedots" style={{ margin: 0 }}>{LIST.length > 1 && LIST.map((_, k) => <span key={k} className={k === i ? 'on' : ''} />)}</div>
+          <button className="chip lim" style={{ padding: '10px 18px', fontSize: 14 }} onClick={next}>{news ? '¡Dale!' : i === LIST.length - 1 ? 'Empezar' : 'Siguiente'}</button>
         </div>
       </div>
     </div>
