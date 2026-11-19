@@ -99,7 +99,7 @@ export function Login({ say }) {
           </div>
         </form>
       )}
-      <p style={{ marginTop: 'auto', padding: '30px 24px', textAlign: 'center', fontWeight: 300, fontSize: 11.5, color: 'var(--gris)' }}>Al seguir aceptás la <a href="/privacidad" style={{ fontWeight: 800 }}>política de privacidad</a>.</p>
+      <p style={{ marginTop: 'auto', padding: '30px 24px', textAlign: 'center', fontWeight: 300, fontSize: 11.5, color: 'var(--gris)' }}>Al seguir aceptás la <a href="/privacidad" style={{ fontWeight: 800 }}>política de privacidad</a> y recibir avisos de teca.</p>
     </div>
   )
 }

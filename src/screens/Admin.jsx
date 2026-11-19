@@ -91,7 +91,7 @@ export function AdminApp({ session, profile, say }) {
   const week = Date.now() - 7 * DAY
   const filteredUsers = (users || []).filter((u) => !q || [u.name, u.username, u.email].some((x) => (x || '').toLowerCase().includes(q.toLowerCase())))
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
-  const T = [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['links', 'Links de regalo']]
+  const T = [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']]
   return (
     <div className="admin">
       <header className="between" style={{ flexWrap: 'wrap', gap: 16, padding: '28px 0 8px' }}>
@@ -104,7 +104,7 @@ export function AdminApp({ session, profile, say }) {
       </header>
       <nav className="row" style={{ gap: 8, padding: '14px 0 26px', flexWrap: 'wrap' }}>{T.map(([k, l]) => <button key={k} className={`chip ${tab === k ? 'on' : ''}`} style={{ fontSize: 15, padding: '10px 18px' }} onClick={() => setTab(k)}>{l}</button>)}</nav>
 
-      {(!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      {tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />
@@ -147,6 +147,46 @@ export function AdminApp({ session, profile, say }) {
             </div>) })}
         </div>
       </>) : <GiftsPanel uid={session.user.id} say={say} wide />}
+    </div>
+  )
+}
+
+function PushPanel({ session, say }) {
+  const [count, setCount] = useState(null)
+  const [title, setTitle] = useState('')
+  const [body, setBody] = useState('')
+  const [url, setUrl] = useState('/')
+  const [busy, setBusy] = useState(false)
+  const [last, setLast] = useState(null)
+  useEffect(() => { sb.rpc('admin_push_count').then(({ data }) => setCount(data ?? 0)) }, [])
+  async function send(e) {
+    e.preventDefault()
+    if (!confirm(`¿Mandar este aviso a ${count} personas?`)) return
+    setBusy(true)
+    const r = await fetch('/api/push', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ title, body, url }) })
+    const j = await r.json().catch(() => ({}))
+    setBusy(false)
+    if (!r.ok) return say(j.error || 'No se pudo mandar')
+    setLast(j); setTitle(''); setBody('')
+  }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 440px) minmax(0, 1fr)', gap: 40, alignItems: 'start' }}>
+      <form onSubmit={send}>
+        <Stat n={count ?? '…'} label="Personas con avisos activados" sub="Les llega al celu, aunque tengan la app cerrada" bg="#E6F04A" />
+        <label className="field"><span className="light">Título · hasta 80 caracteres</span><input className="input" maxLength={80} required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="¡Llegó el ranking del año! 🏆" /></label>
+        <label className="field"><span className="light">Texto · hasta 200 caracteres</span><textarea className="input" maxLength={200} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Armá tu top 3 de libros, pelis y series de 2026." /></label>
+        <div className="field"><span className="light">Al tocarla, abre</span><div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>{[['/', 'Mi teca'], ['/?tab=friends', 'Amigos'], ['/?tab=rank', 'Ranking']].map(([u, l]) => <button type="button" key={u} className={`chip ${url === u ? 'on' : ''}`} onClick={() => setUrl(u)}>{l}</button>)}</div></div>
+        <div style={{ marginTop: 18 }}><button className="btn" disabled={busy || !count}>{busy ? 'Mandando…' : 'Mandar aviso'}</button></div>
+        {last && <p className="body" style={{ fontSize: 14, marginTop: 12 }}>Listo: llegó a {last.sent} {last.sent === 1 ? 'celu' : 'celus'}{last.gone ? ` (${last.gone} ya no tenían la app y los sacamos de la lista)` : ''}.</p>}
+      </form>
+      <div>
+        <div className="light">Así se ve en el celu</div>
+        <div style={{ marginTop: 10, maxWidth: 380, background: 'rgba(245,245,245,.95)', borderRadius: 22, padding: 14, boxShadow: '0 10px 30px -10px rgba(0,0,0,.3)', display: 'flex', gap: 12 }}>
+          <img src="/icons/icon-192.png" alt="" style={{ width: 38, height: 38, borderRadius: 9 }} />
+          <div style={{ flex: 1, minWidth: 0 }}><div className="between"><b style={{ fontSize: 14 }}>{title || 'Título del aviso'}</b><span className="muted" style={{ fontSize: 12 }}>ahora</span></div><div style={{ fontSize: 14, fontWeight: 300, marginTop: 2 }}>{body || 'El texto aparece acá.'}</div></div>
+        </div>
+        <p className="muted" style={{ fontSize: 13, marginTop: 14, lineHeight: 1.45 }}>Les llega a quienes tocaron “activar” en la app. En iPhone, solo si tienen teca agregada al inicio. Mandá pocos y que valgan la pena: si son muchos, la gente los apaga.</p>
+      </div>
     </div>
   )
 }

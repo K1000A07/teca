@@ -4,6 +4,7 @@ import { Avatar, Back, Coin, CoinPill, Cover, Icon, Sheet } from '../ui.jsx'
 import { COINS, KINDS } from '../lib.js'
 import { ProfileForm } from './Auth.jsx'
 import { InstallContent, isStandalone } from './Tutorial.jsx'
+import { pushStatus, enablePush, disablePush } from '../push.js'
 
 export function Profile({ ctx }) {
   const [filter, setFilter] = useState('all')
@@ -67,13 +68,21 @@ function Row({ t, v, onClick, toggle }) {
 const Group = ({ t, children, note }) => <div style={{ marginTop: 18 }}><div className="light">{t}</div><div style={{ marginTop: 4 }}>{children}</div>{note && <p style={{ margin: '8px 0 0', fontWeight: 300, fontSize: 12.5, lineHeight: 1.4, color: 'var(--gris)' }}>{note}</p>}</div>
 
 export function Settings({ ctx }) {
+  const [push, setPush] = useState(null)
+  useEffect(() => { pushStatus().then(setPush) }, [])
+  async function togglePush() {
+    if (push === 'on') { await disablePush(); setPush('off'); return }
+    if (push === 'denied') return ctx.say('Los avisos están bloqueados. Activalos desde los ajustes del celu.')
+    if (push === 'unsupported') return ctx.say(/iphone|ipad/i.test(navigator.userAgent) ? 'En iPhone primero agregá teca a tu inicio y abrila desde ahí.' : 'Este navegador no permite avisos.')
+    try { setPush((await enablePush(ctx.uid)) ? 'on' : await pushStatus()) } catch { ctx.say('No se pudieron activar los avisos') }
+  }
   return (
     <div>
       <Back onBack={ctx.back} title="Ajustes" />
       <div className="pad">
         <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /></Group>
         <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
-        <Group t="La app"><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
+        <Group t="La app"><Row t="Notificaciones en el celu" toggle={push === 'on'} onClick={togglePush} /><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
         {ctx.profile.is_admin && <Group t="Solo para vos"><Row t="Links de regalo" v="tecoins" onClick={() => ctx.go('gifts')} /></Group>}
         <div style={{ marginTop: 22 }}><button className="btn white" onClick={() => sb.auth.signOut()}>Cerrar sesión</button></div>
       </div>
@@ -84,6 +93,13 @@ export function Settings({ ctx }) {
 export function Privacy({ ctx }) {
   const [rank, setRank] = useState(ctx.profile.show_in_ranking)
   const [pub, setPub] = useState(!!ctx.profile.teca_public)
+  const [optOut, setOptOut] = useState(!!ctx.profile.email_opt_out)
+  async function toggleMail() {
+    const v = !optOut; setOptOut(v)
+    const { data, error } = await sb.from('profiles').update({ email_opt_out: v }).eq('id', ctx.uid).select().single()
+    if (error) { setOptOut(!v); return ctx.say('No se pudo guardar') }
+    ctx.setProfile(data)
+  }
   async function togglePub() {
     const v = !pub; setPub(v)
     const { data, error } = await sb.from('profiles').update({ teca_public: v }).eq('id', ctx.uid).select().single()
@@ -107,6 +123,7 @@ export function Privacy({ ctx }) {
         <p className="body" style={{ marginTop: 6, fontSize: 14 }}>Elegí qué información se muestra y a quién.</p>
         <Group t="Tu teca" note={pub ? 'Cualquiera que use teca puede ver tus estantes y reseñas, por ejemplo desde el ranking.' : 'Solo tus amigos ven tus estantes y reseñas. Los demás ven tu perfil y pueden mandarte solicitud.'}><Row t="Que cualquiera pueda ver mi teca" toggle={pub} onClick={togglePub} /></Group>
         <Group t="Ranking" note="En el ranking general solo se muestran tu nombre de usuario, tu foto de perfil y la cantidad de títulos registrados."><Row t="Mostrar mi perfil en el ranking general" toggle={rank} onClick={toggleRank} /></Group>
+        <Group t="Avisos" note="Usamos tu mail solo para mandarte avisos de teca, como novedades o rankings. Nada de publicidad de terceros."><Row t="Recibir avisos de teca por mail" toggle={!optOut} onClick={toggleMail} /></Group>
         <Group t="Tus datos"><Row t="Descargar una copia de mis datos" onClick={download} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
         <div style={{ marginTop: 20, textAlign: 'center' }}><a href="mailto:[TU MAIL]?subject=Eliminar%20mi%20cuenta%20de%20teca" style={{ fontWeight: 800, fontSize: 15, color: '#B3261E' }}>Eliminar mi cuenta</a></div>
       </div>
@@ -118,6 +135,7 @@ export const POLICY = [
   ['Qué es teca', 'teca es un proyecto personal y sin fines comerciales, pensado para compartir recomendaciones de libros, películas y series entre amigos. Para cualquier consulta podés escribir a [TU MAIL].'],
   ['Qué datos se guardan', 'Tu nombre, tu nombre de usuario, tu correo electrónico y, si querés, una foto de perfil. También lo que cargás en la aplicación: títulos, estrellas y reseñas.'],
   ['Para qué se usan', 'Únicamente para que la aplicación funcione: mostrar tus estantes, que tus amigos puedan verlos, armar el ranking y calcular tus tecoins.'],
+  ['Avisos de teca', 'Al crear tu cuenta aceptás que usemos tu mail para mandarte avisos de teca, como novedades, rankings o actividades especiales. Si activás las notificaciones en tu celu, también pueden llegarte por ahí. No son publicidad de terceros. Podés darte de baja de los mails desde Ajustes › Privacidad y apagar las notificaciones desde Ajustes o desde tu celu.'],
   ['Lo que nunca se hace con tus datos', 'No se venden, no se comparten con terceros con fines comerciales, no se usan para publicidad y no se utilizan para ningún otro fin. Quien administra teca no usa la información de los usuarios para nada que no sea el funcionamiento de la aplicación.'],
   ['Quién puede ver lo que cargás', 'Tus estantes y reseñas los ven solo tus amigos, salvo que elijas que tu teca sea pública. En el ranking general aparecen únicamente tu nombre de usuario, tu foto y la cantidad de títulos que cargaste, y podés ocultarte desde Ajustes.'],
   ['Dónde se guardan', 'En los servidores de Supabase, el servicio que aloja la aplicación, con conexión cifrada. Para encontrar tapas y afiches se consultan bases de datos públicas de libros y películas, sin enviar ningún dato tuyo.'],

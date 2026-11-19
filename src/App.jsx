@@ -28,7 +28,7 @@ export default function App() {
   const [people, setPeople] = useState({})
   const [feed, setFeed] = useState([])
   const [saved, setSaved] = useState([])
-  const [stack, setStack] = useState([{ s: 'lib' }])
+  const [stack, setStack] = useState(() => { const t = new URLSearchParams(location.search).get('tab'); return [{ s: ['friends', 'rank', 'me', 'clubs'].includes(t) ? t : 'lib' }] })
   const [sheet, setSheet] = useState(null)
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')

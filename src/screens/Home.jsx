@@ -5,6 +5,8 @@ import { Tray, Toolbar, useArrange } from './Arrange.jsx'
 import { KINDS, KIND_ORDER, dustInfo, plantState } from '../lib.js'
 import { sb } from '../supabase.js'
 import { Coin } from '../ui.jsx'
+import { pushSupported, enablePush } from '../push.js'
+import { isStandalone } from './Tutorial.jsx'
 
 export function TopBar({ title, ctx, coins = true }) {
   return (
@@ -58,6 +60,11 @@ export function Home({ ctx }) {
   const selEntry = entries.find((e) => e.eid === sel)
   const dust = dustInfo(ctx.profile.last_visit)
   const [cleaning, setCleaning] = useState(false)
+  const [askPush, setAskPush] = useState(() => pushSupported() && Notification.permission === 'default' && (isStandalone() || /android/i.test(navigator.userAgent)) && !localStorage.getItem('teca.pushask'))
+  async function turnOnPush() {
+    localStorage.setItem('teca.pushask', '1'); setAskPush(false)
+    try { if (await enablePush(ctx.uid)) ctx.say('¡Listo! Te vamos a avisar las novedades') } catch { ctx.say('No se pudieron activar los avisos') }
+  }
   async function startClean() {
     if (ctx.coins < dust.cost) return ctx.say(`Limpiar cuesta ${dust.cost} tecoins y no te alcanzan`)
     setCleaning(true)
@@ -91,6 +98,13 @@ export function Home({ ctx }) {
         {!editing && (mine.length > 0 || ctx.decos.length > 0) && <button className="linkbtn" style={{ fontSize: 12.5 }} onClick={() => setEditing(true)}>Acomodar</button>}
       </div>
       <TecaTabs kind={kind} setKind={(k) => { setSel(null); setKind(k) }} />
+      {askPush && !editing && (
+        <div className="row" style={{ margin: '12px 20px 0', padding: '10px 12px', background: 'var(--cell)', borderRadius: 16, gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🔔</span>
+          <div style={{ flex: 1, fontSize: 13.5, lineHeight: 1.3 }}><b>¿Te avisamos cuando haya novedades?</b><br /><span style={{ fontWeight: 300 }}>Estrenos, rankings y cosas de tus amigos.</span></div>
+          <div className="stack" style={{ gap: 4, alignItems: 'flex-end' }}><button className="chip lim" onClick={turnOnPush}>activar</button><button className="linkbtn" style={{ fontWeight: 300, fontSize: 12 }} onClick={() => { localStorage.setItem('teca.pushask', '1'); setAskPush(false) }}>ahora no</button></div>
+        </div>
+      )}
       {dust.level > 0 && !editing && (
         <div className="row" style={{ margin: '12px 20px 0', padding: '10px 12px', background: cleaning ? 'var(--lim)' : '#EFE9DD', borderRadius: 16, gap: 10, boxShadow: 'inset 0 0 0 1.5px var(--ink)' }}>
           <span style={{ fontSize: 22 }}>{cleaning ? '🧽' : '🕸️'}</span>
