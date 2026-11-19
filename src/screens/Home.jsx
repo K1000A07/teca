@@ -13,7 +13,7 @@ export function TopBar({ title, ctx, coins = true }) {
     <div className="top">
       <h1 className="h" style={{ fontSize: 34 }}>{title}</h1>
       <div className="row" style={{ gap: 8 }}>
-        {coins && <CoinPill n={ctx.coins} onClick={() => ctx.go('tecoins')} />}
+        {coins && <span data-tour="coins" style={{ display: 'inline-flex', borderRadius: 99 }}><CoinPill n={ctx.coins} onClick={() => ctx.go('tecoins')} /></span>}
         <button className="iconbtn" aria-label="Novedades" onClick={() => { localStorage.setItem('teca.seen', Date.now()); ctx.go('news') }}><Icon n="bell" s={19} />{ctx.hasNews && <span className="dot" />}</button>
       </div>
     </div>
@@ -114,10 +114,10 @@ export function Home({ ctx }) {
         </div>
       )}
       <div style={{ height: 14 }} />
-      <Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
+      <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
         onLongPress={(e) => { setEditing(true); setSel(e) }} onReorder={actions.reorder} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
-        onDecoTap={(d) => d.kind === 'plantita' && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} />
+        onDecoTap={(d) => d.kind === 'plantita' && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>
       {!mine.length && !editing && (
         <div className="pad" style={{ textAlign: 'center', marginTop: 22 }}>
           <div className="h" style={{ fontSize: 22, letterSpacing: '-0.035em' }}>{kind === 'book' ? '¿Qué fue lo último que leíste?' : kind === 'movie' ? '¿Qué fue la última peli que viste?' : '¿Qué serie terminaste?'}</div>

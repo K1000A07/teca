@@ -96,10 +96,10 @@ export default function App() {
   }, [profile?.id])
   useEffect(() => {
     if (!profile || !uid) return
-    if (!localStorage.getItem(`teca.tour.${uid}`)) setTimeout(() => setTour(true), 400)
+    if (!localStorage.getItem(`teca.tour2.${uid}`)) setTimeout(() => setTour(true), 400)
     else if (shouldAskPush()) setTimeout(() => setAskPush(true), 900)
   }, [profile?.id, uid])
-  const endTour = useCallback(() => { localStorage.setItem(`teca.tour.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid])
+  const endTour = useCallback(() => { localStorage.setItem(`teca.tour2.${uid}`, '1'); setTour(false); if (!isStandalone()) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid])
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return

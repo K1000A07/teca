@@ -2,9 +2,12 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { Icon, Sheet } from '../ui.jsx'
 
 const STEPS = [
+  { target: null, title: <>Esta es tu <span className="serif" style={{ fontWeight: 400, fontSize: '1.12em' }}>teca</span></>, text: 'Una biblioteca de verdad, pero en el bolsillo. Cada libro, peli o serie que terminás aparece en tu estante, y tus amigos ven en qué andás.' },
   { target: 'tabs', title: 'Tres estantes, uno para cada cosa', text: <>Tu biblio<span className="serif">teca</span> para libros, tu filmo<span className="serif">teca</span> para pelis y tu video<span className="serif">teca</span> para series. Deslizá para pasar de una a otra.</>, radius: 99 },
-  { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. Buscamos la tapa solos, y cada cosa que cargás te suma tecoins.', radius: 99 },
-  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario y mirá en qué andan: qué leen, qué ven y qué te recomiendan.', radius: 99 },
+  { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. La tapa aparece sola. Ponele estrellas y, si querés, una reseña para tus amigos.', radius: 99 },
+  { target: 'shelf', title: 'Acomodalo a tu gusto', text: 'Mantené apretado cualquier título para entrar al modo acomodar: arrastralo, ponelo parado, acostado o inclinado, y sumá decoraciones.', radius: 8 },
+  { target: 'coins', title: 'Ganá tecoins', text: 'Cada cosa que cargás suma tecoins. Canjealos por plantitas, lámparas o estantes de colores. Ojo: si no pasás seguido, tu teca junta polvo.', radius: 99 },
+  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario o mandales tu link: si se suman, ganan tecoins los dos. Y mirá en qué andan.', radius: 99 },
 ]
 
 export const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
@@ -24,8 +27,11 @@ export function Tutorial({ onDone }) {
   }, [step.target])
   const next = () => (i < STEPS.length - 1 ? setI(i + 1) : onDone())
   const pad = 6
-  const below = rect && rect.top < window.innerHeight / 2
-  const tipStyle = rect ? (below ? { top: rect.bottom + 24 } : { bottom: window.innerHeight - rect.top + 24 }) : { top: '30%' }
+  const H = window.innerHeight
+  const tipStyle = !rect ? { top: '50%', transform: 'translateY(-50%)' }
+    : H - rect.bottom > 250 ? { top: rect.bottom + 22 }
+    : rect.top > 250 ? { bottom: H - rect.top + 22 }
+    : { bottom: 24 }
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} role="dialog" aria-modal="true" aria-label="Tutorial">
       {rect
