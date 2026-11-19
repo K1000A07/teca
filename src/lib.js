@@ -88,18 +88,22 @@ export async function searchTitles(kind, q, author = '') {
   q = (q || '').trim(); author = (author || '').trim()
   if (q.length < 3 && author.length < 3) return []
   if (kind === 'book') {
-    try {
-      const r = await fetch(`/api/books?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`)
-      if (r.ok) {
-        const list = await r.json()
-        if (Array.isArray(list) && list.length) return list.map(({ categories, ...b }) => ({ ...b, genres: genresFromText(categories || []) }))
-      }
-    } catch {}
-    // respaldo si el servidor no responde
-    const [es, all] = await Promise.all([googleBooks(q, author, true).catch(() => []), googleBooks(q, author, false).catch(() => [])])
-    let res = dedupe([...es, ...all.filter((r) => r.lang === 'es'), ...all])
-    if (res.length < 3) { try { res = dedupe([...res, ...(await openLibrary(q, author))]) } catch {} }
-    return res.slice(0, 7)
+    // Se busca en todos lados a la vez y se junta: lo que ya cargó alguien en teca, Google Books
+    // desde el teléfono (cada persona tiene su propio cupo) y el servidor (Open Library y Google).
+    const many = q.length < 3
+    const [mine, gEs, gAll, server] = await Promise.all([
+      catalog(q, author).catch(() => []),
+      googleBooks(q, author, true, many).catch(() => []),
+      googleBooks(q, author, false, many).catch(() => []),
+      fetch(`/api/books?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`).then((r) => (r.ok ? r.json() : [])).then((l) => (Array.isArray(l) ? l.map(({ categories, ...b }) => ({ ...b, genres: genresFromText(categories || []) })) : [])).catch(() => []),
+    ])
+    const es = [...gEs, ...server.filter((r) => r.lang === 'es'), ...gAll.filter((r) => r.lang === 'es')]
+    const rest = [...server.filter((r) => r.lang !== 'es'), ...gAll.filter((r) => r.lang !== 'es')]
+    const nq = norm(q), na = norm(author)
+    const score = (r) => (nq ? (norm(r.title) === nq ? 4 : norm(r.title).startsWith(nq) ? 3 : norm(r.title).includes(nq) ? 1 : 0) : 0)
+      + (na && norm(r.creator).includes(na.split(' ').pop()) ? 2 : 0) + (r.cover_url ? 1 : 0) + (r.pages ? 0.5 : 0)
+    const sorted = [...es.sort((x, y) => score(y) - score(x)), ...rest.sort((x, y) => score(y) - score(x))]
+    return dedupe([...mine, ...sorted]).slice(0, many ? 40 : 25)
   }
   const r = await fetch(`/api/search?type=${kind}&q=${encodeURIComponent([q, author].filter(Boolean).join(' '))}`)
   if (!r.ok) return []
@@ -111,11 +115,11 @@ function dedupe(list) {
   const seen = new Set()
   return list.filter((r) => { const k = norm(r.title) + '|' + norm(r.creator).split(' ').pop(); if (seen.has(k)) return false; seen.add(k); return true })
 }
-async function googleBooks(q, author, spanish) {
+async function googleBooks(q, author, spanish, many) {
   const parts = []
   if (q) parts.push(`intitle:${q}`)
   if (author) parts.push(`inauthor:${author}`)
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parts.join(' '))}&maxResults=12&printType=books${spanish ? '&langRestrict=es' : ''}`
+  const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(parts.join(' '))}&maxResults=${many ? 40 : 20}&printType=books&country=AR${spanish ? '&langRestrict=es' : ''}`
   const r = await fetch(url)
   if (!r.ok) return []
   const j = await r.json()
@@ -132,6 +136,13 @@ async function googleBooks(q, author, spanish) {
   const nq = norm(q)
   out.sort((a, b) => (norm(b.title).startsWith(nq) - norm(a.title).startsWith(nq)) || (!!b.cover_url - !!a.cover_url))
   return dedupe(out)
+}
+// Libros que ya cargó alguien en teca (solo título, autor y tapa; nunca quién)
+async function catalog(q, author) {
+  const { sb } = await import('./supabase.js')
+  const { data, error } = await sb.rpc('catalog_books', { p_q: q || '', p_author: author || '' })
+  if (error || !Array.isArray(data)) return []
+  return data.map((b) => ({ title: b.title, creator: b.creator || '', year: b.year || null, pages: b.pages || null, cover_url: b.cover_url || null, lang: 'es', genres: genreList(b.genre) }))
 }
 async function openLibrary(q, author) {
   const params = new URLSearchParams({ fields: 'key,title,author_name,first_publish_year,cover_i,number_of_pages_median,subject', limit: '8' })
