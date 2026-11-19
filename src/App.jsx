@@ -68,8 +68,8 @@ export default function App() {
       sb.from('user_decos').select('*').eq('user_id', uid),
       sb.from('coin_spends').select('amount').eq('user_id', uid),
     ])
-    setDecos(dc.data || [])
-    setSpent((sp.data || []).reduce((a, x) => a + x.amount, 0))
+    setDecos(Array.isArray(dc.data) ? dc.data : [])
+    setSpent(Array.isArray(sp.data) ? sp.data.reduce((a, x) => a + x.amount, 0) : 0)
     setItems(mine.data || [])
     const fs = fr.data || []
     setFriendships(fs)

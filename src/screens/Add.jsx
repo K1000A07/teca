@@ -133,7 +133,7 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
         <label className="row" style={{ marginTop: 14, gap: 10 }}><span className="light" style={{ flex: 1 }}>Temporadas</span><input className="input" style={{ width: 110 }} inputMode="numeric" value={f.seasons || ''} onChange={(e) => set('seasons', e.target.value.replace(/\D/g, ''))} placeholder="3" /></label>
       )}
 
-      <Light>¿Cuántas estrellas?</Light>
+      <Light>¿Cuántas estrellas? · tocá la mitad para media</Light>
       <Stars n={f.stars} s={30} onChange={(v) => set('stars', v)} />
 
       <Light>¿De qué va? · podés elegir varias</Light>

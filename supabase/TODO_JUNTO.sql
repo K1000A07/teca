@@ -1,4 +1,4 @@
--- teca · TODO JUNTO (archivos 02 a 08)
+-- teca · TODO JUNTO (archivos 02 a 09)
 -- Pegar entero en Supabase › SQL Editor › New query › Run. Se puede correr más de una vez.
 
 alter table public.items add column if not exists platform text;
@@ -314,3 +314,9 @@ grant execute on function public.admin_push_count() to authenticated;
 -- Baja de los avisos por mail
 alter table public.profiles add column if not exists email_opt_out boolean not null default false;
 grant update (email_opt_out) on public.profiles to authenticated;
+
+-- ===================== 09_medias_estrellas =====================
+-- teca · medias estrellas (3,5 · 4,5 …)
+alter table public.items drop constraint if exists items_stars_check;
+alter table public.items alter column stars type numeric(2,1) using stars::numeric;
+alter table public.items add constraint items_stars_check check (stars >= 0 and stars <= 5 and stars * 2 = floor(stars * 2));

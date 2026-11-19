@@ -52,12 +52,26 @@ export function Avatar({ p, s = 40, dot }) {
   )
 }
 
+// Estrellas con medias: tocás la mitad izquierda de una estrella para media, la derecha para entera
 export function Stars({ n = 0, s = 14, onChange }) {
+  n = Number(n) || 0
+  const star = (i) => {
+    const fill = n >= i ? 1 : n >= i - 0.5 ? 0.5 : 0
+    return (
+      <span key={i} style={{ position: 'relative', display: 'inline-block', fontSize: s, lineHeight: 1, color: '#D9D6CF' }}>
+        ★
+        {fill > 0 && <span style={{ position: 'absolute', left: 0, top: 0, width: fill === 1 ? '100%' : '50%', overflow: 'hidden', color: '#141210' }}>★</span>}
+        {onChange && <>
+          <button type="button" aria-label={`${i - 0.5} estrellas`} onClick={() => onChange(n === i - 0.5 ? 0 : i - 0.5)} style={{ position: 'absolute', left: 0, top: -4, width: '50%', height: 'calc(100% + 8px)', border: 0, background: 'transparent', padding: 0 }} />
+          <button type="button" aria-label={`${i} estrellas`} onClick={() => onChange(n === i ? 0 : i)} style={{ position: 'absolute', right: 0, top: -4, width: '50%', height: 'calc(100% + 8px)', border: 0, background: 'transparent', padding: 0 }} />
+        </>}
+      </span>
+    )
+  }
   return (
-    <span style={{ display: 'inline-flex', gap: onChange ? 3 : 1 }} aria-label={`${n} de 5 estrellas`}>
-      {[1, 2, 3, 4, 5].map((i) => onChange
-        ? <button key={i} type="button" onClick={() => onChange(i === n ? 0 : i)} aria-label={`${i} estrellas`} style={{ border: 0, background: 'none', padding: 0, fontSize: s, lineHeight: 1, color: i <= n ? '#141210' : '#D9D6CF' }}>★</button>
-        : <span key={i} style={{ fontSize: s, lineHeight: 1, color: i <= n ? '#141210' : '#D9D6CF' }}>★</span>)}
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: onChange ? 4 : 1 }} aria-label={`${String(n).replace('.', ',')} de 5 estrellas`}>
+      {[1, 2, 3, 4, 5].map(star)}
+      {onChange && n > 0 && <span style={{ marginLeft: 8, fontWeight: 800, fontSize: Math.round(s * .55) }}>{String(n).replace('.', ',')}</span>}
     </span>
   )
 }

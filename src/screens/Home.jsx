@@ -54,7 +54,7 @@ export function Home({ ctx }) {
   const entries = buildEntries(ctx.items, ctx.decos, kind)
   const year = new Date().getFullYear()
   const rated = mine.filter((i) => i.stars)
-  const avg = rated.length ? (rated.reduce((a, i) => a + i.stars, 0) / rated.length).toFixed(1).replace('.', ',') : null
+  const avg = rated.length ? (rated.reduce((a, i) => a + Number(i.stars), 0) / rated.length).toFixed(1).replace('.', ',') : null
   const swipe = useSwipe(kind, (k) => { if (cleaning) return; setSel(null); setKind(k) })
   useEffect(() => { ctx.setHideNav(editing); return () => ctx.setHideNav(false) }, [editing])
   const selEntry = entries.find((e) => e.eid === sel)
