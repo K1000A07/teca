@@ -88,6 +88,14 @@ export async function searchTitles(kind, q, author = '') {
   q = (q || '').trim(); author = (author || '').trim()
   if (q.length < 3 && author.length < 3) return []
   if (kind === 'book') {
+    try {
+      const r = await fetch(`/api/books?q=${encodeURIComponent(q)}&author=${encodeURIComponent(author)}`)
+      if (r.ok) {
+        const list = await r.json()
+        if (Array.isArray(list)) return list.map(({ categories, ...b }) => ({ ...b, genres: genresFromText(categories || []) }))
+      }
+    } catch {}
+    // respaldo si el servidor no responde
     const [es, all] = await Promise.all([googleBooks(q, author, true).catch(() => []), googleBooks(q, author, false).catch(() => [])])
     let res = dedupe([...es, ...all.filter((r) => r.lang === 'es'), ...all])
     if (res.length < 3) { try { res = dedupe([...res, ...(await openLibrary(q, author))]) } catch {} }

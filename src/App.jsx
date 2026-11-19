@@ -129,7 +129,7 @@ export default function App() {
     <div className="app">
       {screens[view.s] || screens.lib}
       {stack.length === 1 && !hideNav && <Nav tab={root} go={tab} onAdd={() => setSheet({ t: 'add' })} dots={{ friends: hasNews }} />}
-      {sheet?.t === 'add' && <AddSheet ctx={ctx} onClose={() => setSheet(null)} />}
+      {sheet?.t === 'add' && <AddSheet ctx={ctx} prefill={sheet.prefill} onClose={() => setSheet(null)} />}
       {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
       {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} from={sheet.from} onClose={() => setSheet(null)} />}

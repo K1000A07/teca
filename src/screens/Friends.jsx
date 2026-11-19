@@ -88,6 +88,7 @@ export function Friends({ ctx }) {
 function Post({ ctx, it, isNew }) {
   const p = ctx.people[it.user_id]
   const saved = ctx.saved.some((s) => s.id === it.id)
+  const already = ctx.items.some((m) => m.kind === it.kind && m.title.toLowerCase() === it.title.toLowerCase())
   async function toggle() {
     if (saved) { await sb.from('saved').delete().eq('user_id', ctx.uid).eq('item_id', it.id); ctx.setSaved((s) => s.filter((x) => x.id !== it.id)) }
     else { await sb.from('saved').insert({ user_id: ctx.uid, item_id: it.id }); ctx.setSaved((s) => [it, ...s]) }
@@ -104,41 +105,69 @@ function Post({ ctx, it, isNew }) {
           {it.review && <div className="clamp" style={{ marginTop: 7, WebkitLineClamp: 3, fontWeight: 300, fontSize: 14, lineHeight: 1.45 }}>{it.review}</div>}
         </div>
       </button>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-        <button onClick={toggle} className={`chip ${saved ? 'on' : ''}`}><Icon n="bookmark" s={14} w={2} />{saved ? 'guardada' : 'guardar para después'}</button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }}>
+        {already ? <span className="chip" style={{ boxShadow: 'none', background: 'transparent', fontWeight: 300 }}>✓ en tu {KINDS[it.kind].teca}teca</span> : <>
+          <button onClick={() => ctx.openSheet({ t: 'add', prefill: it })} className="chip lim"><Icon n="check" s={14} w={2.2} />{it.kind === 'book' ? 'ya lo leí' : 'ya la vi'}</button>
+          <button onClick={toggle} className={`chip ${saved ? 'on' : ''}`}><Icon n="bookmark" s={14} w={2} />{saved ? 'guardada' : 'para después'}</button>
+        </>}
       </div>
       {isNew && <span style={{ position: 'absolute', right: 14, top: 12 }}><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#E6F04A" stroke="#141210" strokeWidth="1.5" /><path d="M12 5.8v12.4M6.6 8.9l10.8 6.2M6.6 15.1l10.8-6.2" stroke="#141210" strokeWidth="2" strokeLinecap="round" /></svg></span>}
     </div>
   )
 }
 
-export function FriendTeca({ ctx, person }) {
+export function FriendTeca({ ctx, person: initial }) {
   const w = useWidth()
   const [kind, setKind] = useState('book')
+  const [person, setPerson] = useState(initial)
   const [items, setItems] = useState(null)
   const [decos, setDecos] = useState([])
-  useEffect(() => { sb.from('user_decos').select('*').eq('user_id', person.id).then(({ data }) => setDecos(data || [])) }, [person.id])
-  useEffect(() => { sb.from('items').select('*').eq('user_id', person.id).order('position', { ascending: true, nullsFirst: false }).order('created_at').then(({ data }) => setItems(data || [])) }, [person.id])
+  const rel = ctx.friendships.find((x) => x.requester === initial.id || x.addressee === initial.id)
+  const isFriend = rel?.status === 'accepted'
+  useEffect(() => {
+    sb.from('profiles').select('*').eq('id', initial.id).maybeSingle().then(({ data }) => data && setPerson(data))
+    sb.from('user_decos').select('*').eq('user_id', initial.id).then(({ data }) => setDecos(data || []))
+    sb.from('items').select('*').eq('user_id', initial.id).order('position', { ascending: true, nullsFirst: false }).order('created_at').then(({ data }) => setItems(data || []))
+  }, [initial.id])
   const swipe = useSwipe(kind, setKind)
-  const list = (items || []).filter((i) => i.kind === kind)
+  const canSee = isFriend || person.teca_public
   const common = (items || []).filter((i) => ctx.items.some((m) => m.kind === i.kind && m.title.toLowerCase() === i.title.toLowerCase())).length
   async function unfriend() {
     if (!confirm(`¿Dejar de ser amigo de ${person.name}?`)) return
-    const f = ctx.friendships.find((x) => x.requester === person.id || x.addressee === person.id)
-    if (f) await sb.from('friendships').delete().eq('id', f.id)
+    if (rel) await sb.from('friendships').delete().eq('id', rel.id)
     ctx.reload(); ctx.back()
   }
+  async function ask() {
+    const { error } = await sb.from('friendships').insert({ requester: ctx.uid, addressee: person.id })
+    if (error) return ctx.say(error.code === '23505' ? 'Ya hay una solicitud entre ustedes' : 'No se pudo mandar')
+    ctx.say(`Le mandaste solicitud a ${person.name}`); ctx.reload()
+  }
+  async function accept() { await sb.from('friendships').update({ status: 'accepted' }).eq('id', rel.id); ctx.say('¡Ahora son amigos!'); ctx.reload() }
+  const action = isFriend ? null
+    : !rel ? <button className="btn" onClick={ask}>Sumar a {person.name}</button>
+    : rel.addressee === ctx.uid ? <button className="btn" onClick={accept}>Aceptar solicitud</button>
+    : <button className="btn white" disabled>Solicitud enviada</button>
   return (
     <div {...swipe}>
-      <Back onBack={ctx.back} title="" right={<button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={unfriend}>Dejar de seguir</button>} />
+      <Back onBack={ctx.back} title="" right={isFriend && <button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={unfriend}>Dejar de seguir</button>} />
       <div className="row pad" style={{ gap: 14, paddingBottom: 6 }}>
         <Avatar p={person} s={70} />
         <div><div className="h" style={{ fontSize: 28 }}>La <span className="teca">teca</span> de {person.name}</div>
-          <div className="light" style={{ marginTop: 6 }}>{items ? `${items.length} títulos · ${common} en común` : '…'}</div></div>
+          <div className="light" style={{ marginTop: 6 }}>@{person.username}{canSee && items ? ` · ${items.length} títulos · ${common} en común` : ''}</div></div>
       </div>
-      <TecaTabs kind={kind} setKind={setKind} />
-      <div style={{ height: 14 }} />
-      {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
+      {action && <div className="pad" style={{ marginTop: 10 }}>{action}</div>}
+      {canSee ? (<>
+        <TecaTabs kind={kind} setKind={setKind} />
+        <div style={{ height: 14 }} />
+        {items && <Shelf entries={buildEntries(items, decos, kind)} kind={kind} width={w} styleName={person.shelf_style} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
+      </>) : (
+        <div className="pad" style={{ marginTop: 24 }}>
+          <div className="card" style={{ textAlign: 'center', padding: 24 }}>
+            <div style={{ fontSize: 30 }}>🔒</div>
+            <p className="body" style={{ marginTop: 8 }}>La teca de {person.name} es solo para sus amigos. {rel ? 'Cuando acepte tu solicitud vas a poder verla.' : 'Mandale solicitud para verla.'}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -144,7 +144,13 @@ export function Sheet({ onClose, children }) {
   useEffect(() => { const f = (e) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f) }, [onClose])
   return (<>
     <div className="scrim" onClick={onClose} />
-    <div className="sheet" role="dialog" aria-modal="true"><div className="grab" />{children}</div>
+    <div className="sheet" role="dialog" aria-modal="true">
+      <div style={{ position: 'relative', height: 30, marginBottom: 8 }}>
+        <div className="grab" style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', margin: 0 }} />
+        <button onClick={onClose} aria-label="Cerrar" className="iconbtn" style={{ position: 'absolute', right: -6, top: -2, width: 34, height: 34 }}><Icon n="x" s={16} w={2.2} /></button>
+      </div>
+      {children}
+    </div>
   </>)
 }
 

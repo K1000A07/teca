@@ -22,6 +22,7 @@ export function Detail({ ctx, it, onClose }) {
   const current = mine ? ctx.items.find((x) => x.id === it.id) || it : it
   const others = [...ctx.feed, ...(mine ? [] : ctx.items)].filter((x) => x.id !== it.id && x.kind === it.kind && norm(x.title) === norm(it.title))
   const isSaved = ctx.saved.some((s) => s.id === it.id)
+  const already = ctx.items.some((m) => m.kind === it.kind && norm(m.title) === norm(it.title))
 
   async function del() {
     if (!confirm(`¿Borrar ${current.title} de tu ${KINDS[current.kind].teca}teca?`)) return
@@ -48,7 +49,8 @@ export function Detail({ ctx, it, onClose }) {
           <div style={{ marginTop: 8 }}><Review text={current.review} /></div>
         </div>
       )}
-      {!mine && <div style={{ marginTop: 12 }}><button className={`btn ${isSaved ? 'ink' : 'white'}`} onClick={toggleSave}>{isSaved ? 'Guardada para después' : 'Guardar para después'}</button></div>}
+      {!mine && !already && <div className="row" style={{ marginTop: 12, gap: 8 }}><button className="btn" onClick={() => { onClose(); setTimeout(() => ctx.openSheet({ t: 'add', prefill: current }), 50) }}>{current.kind === 'book' ? 'Ya lo leí' : 'Ya la vi'}</button><button className={`btn ${isSaved ? 'ink' : 'white'}`} onClick={toggleSave}>{isSaved ? 'Guardada' : 'Para después'}</button></div>}
+      {!mine && already && <p className="body muted" style={{ fontSize: 13, marginTop: 12 }}>✓ Ya está en tu {KINDS[current.kind].teca}teca.</p>}
       {others.length > 0 && (<>
         <div className="between" style={{ marginTop: 18 }}><span style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em' }}>Lo que dijeron tus amigos</span></div>
         {others.slice(0, 6).map((o) => { const p = o.user_id === ctx.uid ? ctx.profile : ctx.people[o.user_id]; return (

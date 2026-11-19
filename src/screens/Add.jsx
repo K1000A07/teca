@@ -1,8 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Coin, Cover, Icon, Sheet, Stars } from '../ui.jsx'
 import { GENRES, KINDS, KIND_ORDER, PLATFORMS, coinsFor, genreList, searchTitles } from '../lib.js'
 
+async function shrinkKeep(file, max) {
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file) })
+  const k = Math.min(1, max / Math.max(img.width, img.height))
+  const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k)
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height)
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85))
+}
 const LANGS = { en: 'en inglés', pt: 'en portugués', fr: 'en francés', it: 'en italiano', de: 'en alemán' }
 const Light = ({ children, style }) => <div className="light" style={{ marginTop: 14, marginBottom: 6, ...style }}>{children}</div>
 
@@ -15,12 +22,26 @@ function Choice({ on, title, sub, onClick }) {
   )
 }
 
-export function AddSheet({ ctx, onClose, edit }) {
-  const [kind, setKind] = useState(edit?.kind || ctx.teca)
-  const [f, setF] = useState(edit ? { ...edit, genres: genreList(edit.genre), in_theaters: edit.seen_where === 'cine' } : { genres: [], title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
-  const [q, setQ] = useState(edit?.title || '')
+export function AddSheet({ ctx, onClose, edit, prefill }) {
+  const [kind, setKind] = useState(edit?.kind || prefill?.kind || ctx.teca)
+  const [f, setF] = useState(edit ? { ...edit, genres: genreList(edit.genre), in_theaters: edit.seen_where === 'cine' } : prefill ? { stars: 0, review: '', seen_where: 'casa', platform: null, format: 'papel', title: prefill.title, creator: prefill.creator || '', year: prefill.year || null, cover_url: prefill.cover_url || null, pages: prefill.pages || null, seasons: prefill.seasons || null, genres: genreList(prefill.genre) } : { genres: [], title: '', creator: '', year: null, cover_url: null, pages: null, seasons: null, stars: 0, genre: null, review: '', seen_where: 'casa', platform: null, format: 'papel' })
+  const [q, setQ] = useState(edit?.title || prefill?.title || '')
   const [sugs, setSugs] = useState([])
-  const [picked, setPicked] = useState(!!edit)
+  const [picked, setPicked] = useState(!!edit || !!prefill)
+  const coverRef = useRef()
+  const [uploading, setUploading] = useState(false)
+  async function uploadCover(e) {
+    const file = e.target.files?.[0]; if (!file) return
+    setUploading(true)
+    try {
+      const blob = await shrinkKeep(file, 700)
+      const path = `${ctx.uid}/cover-${Date.now()}.jpg`
+      const { error } = await sb.storage.from('avatars').upload(path, blob, { contentType: 'image/jpeg' })
+      if (error) throw error
+      set('cover_url', sb.storage.from('avatars').getPublicUrl(path).data.publicUrl); setPicked(true)
+    } catch { ctx.say('No se pudo subir la foto') }
+    setUploading(false)
+  }
   const [busy, setBusy] = useState(false)
   const [searching, setSearching] = useState(false)
   const [done, setDone] = useState(null)
@@ -70,11 +91,15 @@ export function AddSheet({ ctx, onClose, edit }) {
       <div className="seg">{KIND_ORDER.map((k) => <button key={k} className={k === kind ? 'on' : ''} onClick={() => { setKind(k); setPicked(false); setSugs([]) }}><Icon n={KINDS[k].icon} s={16} w={2} />{KINDS[k].label}</button>)}</div>
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 14, marginTop: 16 }}>
+        <div style={{ flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         {f.cover_url || picked ? <Cover it={item} w={76} /> : (
           <div style={{ width: 76, height: 112, flex: 'none', border: '1.5px dashed var(--ink)', borderRadius: 3, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, textAlign: 'center' }}>
             <Icon n="photo" s={20} w={1.6} /><span style={{ fontWeight: 300, fontSize: 9.5, lineHeight: 1.25 }}>{kind === 'book' ? 'la tapa' : 'el afiche'}<br />aparece sol{kind === 'book' ? 'a' : 'o'}</span>
           </div>
         )}
+        <button type="button" className="linkbtn" style={{ fontSize: 11, fontWeight: 300 }} onClick={() => coverRef.current.click()} disabled={uploading}>{uploading ? 'subiendo…' : 'subir foto'}</button>
+        <input ref={coverRef} type="file" accept="image/*" hidden onChange={uploadCover} />
+        </div>
         <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
           <div className="light" style={{ marginBottom: 6 }}>Título</div>
           <input className="input" style={{ fontSize: 18 }} value={q} autoFocus={!edit} onChange={(e) => { setQ(e.target.value); setPicked(false) }} placeholder={kind === 'book' ? 'Rayuela' : kind === 'movie' ? 'Aftersun' : 'The Bear'} />

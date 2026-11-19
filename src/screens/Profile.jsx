@@ -72,7 +72,7 @@ export function Settings({ ctx }) {
       <Back onBack={ctx.back} title="Ajustes" />
       <div className="pad">
         <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /></Group>
-        <Group t="Privacidad"><Row t="Quién ve qué" v="Amigos" onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
+        <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
         <Group t="La app"><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
         {ctx.profile.is_admin && <Group t="Solo para vos"><Row t="Links de regalo" v="tecoins" onClick={() => ctx.go('gifts')} /></Group>}
         <div style={{ marginTop: 22 }}><button className="btn white" onClick={() => sb.auth.signOut()}>Cerrar sesión</button></div>
@@ -83,6 +83,13 @@ export function Settings({ ctx }) {
 
 export function Privacy({ ctx }) {
   const [rank, setRank] = useState(ctx.profile.show_in_ranking)
+  const [pub, setPub] = useState(!!ctx.profile.teca_public)
+  async function togglePub() {
+    const v = !pub; setPub(v)
+    const { data, error } = await sb.from('profiles').update({ teca_public: v }).eq('id', ctx.uid).select().single()
+    if (error) { setPub(!v); return ctx.say('No se pudo guardar') }
+    ctx.setProfile(data)
+  }
   async function toggleRank() {
     const v = !rank; setRank(v)
     const { data } = await sb.from('profiles').update({ show_in_ranking: v }).eq('id', ctx.uid).select().single()
@@ -98,7 +105,7 @@ export function Privacy({ ctx }) {
       <div className="pad">
         <h1 className="h" style={{ fontSize: 28, marginTop: 4 }}>Configuración de privacidad</h1>
         <p className="body" style={{ marginTop: 6, fontSize: 14 }}>Elegí qué información se muestra y a quién.</p>
-        <Group t="Contenido"><Row t="Visibilidad de tus estantes" v="Amigos" /><Row t="Visibilidad de tus reseñas" v="Amigos" /></Group>
+        <Group t="Tu teca" note={pub ? 'Cualquiera que use teca puede ver tus estantes y reseñas, por ejemplo desde el ranking.' : 'Solo tus amigos ven tus estantes y reseñas. Los demás ven tu perfil y pueden mandarte solicitud.'}><Row t="Que cualquiera pueda ver mi teca" toggle={pub} onClick={togglePub} /></Group>
         <Group t="Ranking" note="En el ranking general solo se muestran tu nombre de usuario, tu foto de perfil y la cantidad de títulos registrados."><Row t="Mostrar mi perfil en el ranking general" toggle={rank} onClick={toggleRank} /></Group>
         <Group t="Tus datos"><Row t="Descargar una copia de mis datos" onClick={download} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
         <div style={{ marginTop: 20, textAlign: 'center' }}><a href="mailto:[TU MAIL]?subject=Eliminar%20mi%20cuenta%20de%20teca" style={{ fontWeight: 800, fontSize: 15, color: '#B3261E' }}>Eliminar mi cuenta</a></div>
@@ -112,7 +119,7 @@ export const POLICY = [
   ['Qué datos se guardan', 'Tu nombre, tu nombre de usuario, tu correo electrónico y, si querés, una foto de perfil. También lo que cargás en la aplicación: títulos, estrellas y reseñas.'],
   ['Para qué se usan', 'Únicamente para que la aplicación funcione: mostrar tus estantes, que tus amigos puedan verlos, armar el ranking y calcular tus tecoins.'],
   ['Lo que nunca se hace con tus datos', 'No se venden, no se comparten con terceros con fines comerciales, no se usan para publicidad y no se utilizan para ningún otro fin. Quien administra teca no usa la información de los usuarios para nada que no sea el funcionamiento de la aplicación.'],
-  ['Quién puede ver lo que cargás', 'Tus estantes y reseñas los ven solo tus amigos. En el ranking general aparecen únicamente tu nombre de usuario, tu foto y la cantidad de títulos que cargaste, y podés ocultarte desde Ajustes.'],
+  ['Quién puede ver lo que cargás', 'Tus estantes y reseñas los ven solo tus amigos, salvo que elijas que tu teca sea pública. En el ranking general aparecen únicamente tu nombre de usuario, tu foto y la cantidad de títulos que cargaste, y podés ocultarte desde Ajustes.'],
   ['Dónde se guardan', 'En los servidores de Supabase, el servicio que aloja la aplicación, con conexión cifrada. Para encontrar tapas y afiches se consultan bases de datos públicas de libros y películas, sin enviar ningún dato tuyo.'],
   ['Tus derechos', 'Podés pedir ver, corregir o borrar tus datos en cualquier momento escribiendo a [TU MAIL]. Los pedidos para ver tus datos se responden dentro de los diez días corridos y los de corrección o borrado, dentro de los cinco días hábiles, como indica la Ley N° 25.326 de Protección de los Datos Personales.'],
   ['Órgano de control', 'LA AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.'],
