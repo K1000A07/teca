@@ -87,9 +87,16 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
       if (!d.moved && Math.hypot(dx, dy) > 7) { d.moved = true; clearTimeout(d.timer) }
       if (!editing || !d.moved) return
       ev.preventDefault()
-      const el = document.elementFromPoint(ev.clientX, ev.clientY)?.closest('[data-eid]')
+      const hit = document.elementFromPoint(ev.clientX, ev.clientY)
+      const el = hit?.closest('[data-eid]')
       let target = null, after = false
       if (el && el.dataset.eid !== d.eid) { const r = el.getBoundingClientRect(); target = el.dataset.eid; after = ev.clientX > r.left + r.width / 2 }
+      else if (!el) {
+        // en el hueco de un estante: va al final de ese estante
+        const row = hit?.closest('[data-rowlast]')
+        if (row?.dataset.rowlast && row.dataset.rowlast !== d.eid) { target = row.dataset.rowlast; after = true }
+        else if (row?.dataset.rowfirst && row.dataset.rowfirst !== d.eid) { target = row.dataset.rowfirst; after = false }
+      }
       setDrag({ eid: d.eid, dx, dy, target, after })
     }
     const up = () => {
@@ -137,8 +144,12 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
   return (
     <div className={`case k${k}`} style={{ width }}>
       <Dust level={editing ? 0 : dust} cleaning={cleaning} onCleaned={onCleaned} />
-      {rows.map((r, i) => (
-        <div key={i}>
+      {rows.map((r, i) => {
+        const lastB = r[r.length - 1]
+        const rowLast = lastB ? (lastB.top || lastB.entries[lastB.entries.length - 1]).eid : entries[entries.length - 1]?.eid
+        const nextFirst = rows.slice(i + 1).find((x) => x.length)?.[0]?.entries[0]?.eid
+        return (
+        <div key={i} data-rowlast={r.length ? rowLast : nextFirst ? undefined : entries[entries.length - 1]?.eid} data-rowfirst={r.length ? undefined : nextFirst} style={{ position: 'relative' }}>
           <div className="shelfrow" style={{ minHeight: r.length ? 0 : 108 }}>
             {r.map((b, j) => (
               <span key={b.entries[0].eid} style={{ display: 'contents' }}>
@@ -155,7 +166,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, sel
           </div>
           <div className={`plank ${sty.grain ? '' : 'nograin'}`} style={{ background: sty.plank }} />
         </div>
-      ))}
+      )})}
     </div>
   )
 }

@@ -114,7 +114,7 @@ export function ShopTiles({ ctx, actions, kind, cat }) {
   </>)
 }
 
-export function Tray({ ctx, actions, kind }) {
+export function Tray({ ctx, actions, kind, onDone }) {
   const [tab, setTab] = useState(0)
   const [cat, setCat] = useState('plantas')
   const loose = ctx.decos.filter((d) => placeable(d.kind) && !d.teca)
@@ -122,7 +122,7 @@ export function Tray({ ctx, actions, kind }) {
     <div className="tray">
       <div className="between">
         <div className="row" style={{ gap: 6 }}>{['Tus decos', 'Canjear'].map((t, i) => <button key={t} className={`chip ${tab === i ? 'on' : ''}`} onClick={() => setTab(i)}>{t}</button>)}</div>
-        <CoinPill n={ctx.coins} />
+        <div className="row" style={{ gap: 6 }}><CoinPill n={ctx.coins} />{onDone && <button className="chip on" style={{ padding: '8px 16px', fontSize: 14 }} onClick={onDone}>Listo</button>}</div>
       </div>
       {tab === 1 && <div style={{ marginTop: 10 }}><CatChips cat={cat} setCat={setCat} /></div>}
       <div className="row" style={{ gap: 10, marginTop: 12, overflowX: 'auto', alignItems: 'flex-start', paddingBottom: 2 }}>
@@ -137,7 +137,7 @@ export function Tray({ ctx, actions, kind }) {
   )
 }
 
-export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
+export function Toolbar({ ctx, actions, entry, onClose, onStack }) {
   const fileRef = useRef()
   if (!entry) return null
   const btn = (on, ic, label, onClick) => (
@@ -159,7 +159,7 @@ export function Toolbar({ ctx, actions, entry, onClose, canStack }) {
   const d = entry.ref
   return (
     <div className="row" style={{ position: 'fixed', left: '50%', transform: 'translateX(-50%)', bottom: 250, zIndex: 46, background: 'var(--ink)', borderRadius: 18, padding: 5, gap: 2, boxShadow: '0 14px 26px -10px rgba(0,0,0,.55)' }}>
-      {(canStack || d.stacked) && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, d.stacked ? 'bajar' : 'arriba', () => actions.stack(d, !d.stacked))}
+      {onStack && btn(!!d.stacked, <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.9 }}><rect x="4" y="15" width="16" height="4" rx="1" /><rect x="5" y="10" width="14" height="4" rx="1" /><path d="M12 2v6M9 5l3-3 3 3" /></svg>, d.stacked ? 'bajar' : 'arriba', () => onStack(d))}
       {takesText(d.kind) && btn(false, <span style={{ fontWeight: 800, fontSize: 15, lineHeight: '20px' }}>Aa</span>, 'escribir', () => actions.writeSign(d))}
       {takesPhoto(d.kind) && <>{btn(false, <Icon n="photo" s={20} />, d.photo_url ? 'cambiar foto' : 'poner foto', () => fileRef.current.click())}<input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && actions.setPhoto(d, e.target.files[0])} /></>}
       {btn(false, <Icon n="x" s={20} />, 'sacar', () => { actions.unplace(d); onClose() })}

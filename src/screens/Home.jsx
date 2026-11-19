@@ -64,8 +64,29 @@ export function Home({ ctx }) {
   useEffect(() => { ctx.setHideNav(editing); return () => ctx.setHideNav(false) }, [editing])
   const selIdx = entries.findIndex((e) => e.eid === sel)
   const selEntry = entries[selIdx]
-  const prevEntry = entries[selIdx - 1]
-  const canStack = selEntry?.type === 'deco' && prevEntry?.type === 'item' && !!prevEntry.ref.lying
+
+  // Subir una deco arriba de la pila de libros acostados más cercana (o bajarla)
+  async function stackSel(d) {
+    if (d.stacked) return actions.stack(d, false)
+    const ids = allEntries.map((e) => e.eid)
+    const me = ids.indexOf('d:' + d.id)
+    const runs = []
+    allEntries.forEach((e, i) => {
+      if (e.type !== 'item' || !e.ref.lying) return
+      const last = runs[runs.length - 1]
+      if (last && last.end === i - 1 && i - last.start < 5) last.end = i
+      else runs.push({ start: i, end: i })
+    })
+    const free = runs.filter((r) => { const n = allEntries[r.end + 1]; return !(n?.type === 'deco' && n.ref.stacked && n.eid !== 'd:' + d.id) })
+    if (!free.length) return ctx.say(runs.length ? 'Todas tus pilas ya tienen algo arriba' : 'Primero acostá un libro: tocalo y elegí "acostado"')
+    const best = free.reduce((a, r) => (Math.abs(r.end - me) < Math.abs(a.end - me) ? r : a))
+    const target = allEntries[best.end].eid
+    const rest = ids.filter((x) => x !== 'd:' + d.id)
+    rest.splice(rest.indexOf(target) + 1, 0, 'd:' + d.id)
+    await actions.reorder(rest)
+    await actions.stack(d, true)
+  }
+  const done = () => { setEditing(false); setSel(null) }
   const dust = dustInfo(ctx.profile.last_visit)
   const [cleaning, setCleaning] = useState(false)
   const [askPush, setAskPush] = useState(() => pushSupported() && Notification.permission === 'default' && (isStandalone() || /android/i.test(navigator.userAgent)) && !localStorage.getItem('teca.pushask') && false)
@@ -99,7 +120,7 @@ export function Home({ ctx }) {
   return (
     <div {...(editing ? {} : swipe)} style={{ paddingBottom: editing ? 320 : 0 }}>
       {editing ? (
-        <div className="top"><h1 className="h" style={{ fontSize: 30 }}>Acomodando</h1><button className="chip on" style={{ padding: '10px 18px', fontSize: 14 }} onClick={() => { setEditing(false); setSel(null) }}>Listo</button></div>
+        <div className="top"><h1 className="h" style={{ fontSize: 30 }}>Acomodando</h1></div>
       ) : <TopBar title={<Teca pre={`Mi ${KINDS[kind].teca}`} />} ctx={ctx} />}
       <div className="pad between" style={{ marginTop: 2 }}>
         <span className="light">{editing ? 'Arrastrá para mover · tocá para cambiarlo' : mine.length ? `${mine.length} ${mine.length === 1 ? KINDS[kind].label : KINDS[kind].plural}${avg ? ` · ★ ${avg}` : ''} · ${year}` : 'Todavía está vacía'}</span>
@@ -138,7 +159,7 @@ export function Home({ ctx }) {
           <p className="body" style={{ marginTop: 8, fontSize: 14 }}>Cargala con el + y sumá tus primeros tecoins.</p>
         </div>
       )}
-      {editing && <><Toolbar ctx={ctx} actions={actions} entry={selEntry} canStack={canStack} onClose={() => setSel(null)} /><Tray ctx={ctx} actions={actions} kind={kind} /></>}
+      {editing && <><Toolbar ctx={ctx} actions={actions} entry={selEntry} onStack={stackSel} onClose={() => setSel(null)} /><Tray ctx={ctx} actions={actions} kind={kind} onDone={done} /></>}
     </div>
   )
 }
