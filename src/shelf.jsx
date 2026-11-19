@@ -59,47 +59,56 @@ function measure(b) {
 export function layoutShelf(entries, inner, packed) {
   const fixed = [], loose = []
   const piles = new Map()
+  let n = 0
+  const deferred = []
   for (const e of entries) {
     const r = e.ref
     const spot = !packed && hasSpot(r)
+    const key = spot ? `${r.shelf_row}|${rnd(r.shelf_x)}` : null
     if (e.type === 'item' && r.lying) {
       if (spot) {
-        const key = `${r.shelf_row}|${rnd(r.shelf_x)}`
         let p = piles.get(key)
-        if (!p || p.entries.length >= 5) { p = { key, type: 'pile', entries: [], row: r.shelf_row, x: rnd(r.shelf_x), fixed: true }; piles.set(key, p); fixed.push(p) }
+        if (!p || p.entries.length >= 5) { p = { key: `p${n++}`, type: 'pile', entries: [], row: r.shelf_row, x: rnd(r.shelf_x), fixed: true }; piles.set(key, p); fixed.push(p) }
         p.entries.push(e)
       } else {
         const last = loose[loose.length - 1]
         if (last?.type === 'pile' && last.entries.length < 5 && !last.top) last.entries.push(e)
-        else loose.push({ key: e.eid, type: 'pile', entries: [e] })
+        else loose.push({ key: `p${n++}`, type: 'pile', entries: [e] })
       }
-    } else if (e.type === 'deco' && r.stacked) {
-      const p = spot ? piles.get(`${r.shelf_row}|${rnd(r.shelf_x)}`) : (loose[loose.length - 1]?.type === 'pile' ? loose[loose.length - 1] : null)
-      if (p && !p.top) p.top = e
-      else (spot ? fixed : loose).push(spot ? { key: e.eid, type: 'one', entries: [e], row: r.shelf_row, x: rnd(r.shelf_x), fixed: true } : { key: e.eid, type: 'one', entries: [e] })
-    } else if (spot) fixed.push({ key: e.eid, type: 'one', entries: [e], row: r.shelf_row, x: rnd(r.shelf_x), fixed: true })
+    } else if (e.type === 'deco' && r.stacked && spot) deferred.push([e, key])
+    else if (e.type === 'deco' && r.stacked && loose[loose.length - 1]?.type === 'pile' && !loose[loose.length - 1].top) loose[loose.length - 1].top = e
+    else if (spot) fixed.push({ key: e.eid, type: 'one', entries: [e], row: r.shelf_row, x: rnd(r.shelf_x), fixed: true })
     else loose.push({ key: e.eid, type: 'one', entries: [e] })
   }
-  const rows = []
-  const rowOf = (i) => (rows[i] ||= [])
-  // lo que tiene lugar guardado: si se pisa con el de al lado, se corre un poquito
-  fixed.forEach(measure)
+  for (const [e, key] of deferred) {
+    const p = piles.get(key)
+    if (p && !p.top) p.top = e
+    else fixed.push({ key: e.eid, type: 'one', entries: [e], row: e.ref.shelf_row, x: rnd(e.ref.shelf_x), fixed: true })
+  }
+  fixed.forEach(measure); loose.forEach(measure)
+  // cada estante: ordenado por dónde está cada cosa; si algo se pisa, empuja a los de al lado;
+  // si ya no entra, lo último pasa al estante de abajo
   const byRow = {}
   fixed.forEach((b) => (byRow[b.row] ||= []).push(b))
-  Object.entries(byRow).forEach(([ri, list]) => {
-    list.sort((a, b) => a.x - b.x)
+  const rows = []
+  let carry = []
+  const maxRow = Math.max(-1, ...fixed.map((b) => b.row))
+  for (let ri = 0; ri <= maxRow || carry.length; ri++) {
+    const list = [...carry.map((b) => ({ ...b, x: -1 })), ...(byRow[ri] || []).sort((a, c) => (a.x * inner + a.w / 2) - (c.x * inner + c.w / 2))]
+    carry = []
+    let total = list.reduce((a, b) => a + b.w + GAP, -GAP)
+    while (list.length > 1 && total > inner) { const b = list.pop(); carry.unshift(b); total -= b.w + GAP }
     let right = 0
-    for (const b of list) {
-      b.left = Math.min(Math.max(b.x * inner, right), Math.max(0, inner - b.w))
-      right = b.left + b.w + GAP
-      rowOf(+ri).push(b)
-    }
-  })
+    for (const b of list) { b.left = Math.max(b.x < 0 ? 0 : b.x * inner, right); right = b.left + b.w + GAP }
+    let lim = inner
+    for (let i = list.length - 1; i >= 0; i--) { const b = list[i]; b.left = Math.max(0, Math.min(b.left, lim - b.w)); lim = b.left - GAP }
+    list.forEach((b) => { b.row = ri })
+    rows[ri] = list
+  }
   // lo nuevo va al primer hueco donde entra
   for (const b of loose) {
-    measure(b)
     for (let ri = 0; ; ri++) {
-      const ivs = rowOf(ri).map((x) => [x.left, x.left + x.w]).sort((a, c) => a[0] - c[0])
+      const ivs = (rows[ri] ||= []).map((x) => [x.left, x.left + x.w]).sort((a, c) => a[0] - c[0])
       let cur = 0, at = null
       for (const [l, r] of ivs) { if (l - cur >= b.w) { at = cur; break } cur = Math.max(cur, r + GAP) }
       if (at == null && inner - cur >= b.w) at = cur
@@ -109,21 +118,6 @@ export function layoutShelf(entries, inner, packed) {
   }
   for (let i = 0; i < rows.length; i++) rows[i] ||= []
   return rows
-}
-// Lugar libre más cercano a donde se soltó
-function nearestFree(blocks, w, want, inner) {
-  const ivs = blocks.map((b) => [b.left, b.left + b.w]).sort((a, c) => a[0] - c[0])
-  const gaps = []
-  let cur = 0
-  for (const [l, r] of ivs) { if (l > cur) gaps.push([cur, l - GAP]); cur = Math.max(cur, r + GAP) }
-  if (inner > cur) gaps.push([cur, inner])
-  let best = null
-  for (const [a, b] of gaps) {
-    if (b - a < w) continue
-    const c = Math.min(Math.max(want, a), b - w)
-    if (best == null || Math.abs(c - want) < Math.abs(best - want)) best = c
-  }
-  return best
 }
 
 export function Shelf({ entries, kind, width, styleName = 'madera', editing, packed, selected, onOpen, onSelect, onLongPress, onMove, onAdd, onDecoTap, onFull, dust = 0, cleaning, onCleaned }) {
@@ -181,46 +175,50 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, pac
     if (!en) return
     // en qué estante se soltó
     const rowEls = [...(caseRef.current?.querySelectorAll('[data-row]') || [])]
-    let ri = -1, rowRect = null
-    rowEls.forEach((el) => { const r = el.getBoundingClientRect(); if (py >= r.top - 10 && py <= r.bottom + 22) { ri = +el.dataset.row; rowRect = r } })
-    if (ri < 0) {
-      // más arriba o más abajo de todo: el estante más cercano
-      const rs = rowEls.map((el) => [+el.dataset.row, el.getBoundingClientRect()])
-      if (!rs.length) return
-      const near = rs.reduce((a, b) => (Math.abs(b[1].bottom - py) < Math.abs(a[1].bottom - py) ? b : a))
-      ri = near[0]; rowRect = near[1]
-    }
+    const rs = rowEls.map((el) => [+el.dataset.row, el.getBoundingClientRect()])
+    if (!rs.length) return
+    const hit = rs.find(([, r]) => py >= r.top - 10 && py <= r.bottom + 22) || rs.reduce((a, b) => (Math.abs(b[1].bottom - py) < Math.abs(a[1].bottom - py) ? b : a))
+    const [ri, rowRect] = hit
     const all = rows.flatMap((r) => r)
-    const spot = (b) => ({ row: b.row, x: rnd(b.left / inner) })
-    // fijar en su lugar todo lo que todavía se acomodaba solo, así nada salta
-    const ups = []
-    const seen = new Set()
-    for (const b of all) {
-      for (const x of [...b.entries, ...(b.top ? [b.top] : [])]) {
-        if (x.eid === d.eid) continue
-        seen.add(x.eid)
-        if (!b.fixed || !hasSpot(x.ref) || Math.abs(x.ref.shelf_x - spot(b).x) > 0.0001 || x.ref.shelf_row !== b.row) ups.push({ eid: x.eid, ...spot(b) })
-      }
+    const spotOf = {}
+    for (const b of all) for (const x of [...b.entries, ...(b.top ? [b.top] : [])]) spotOf[x.eid] = { row: b.row, x: rnd(b.left / inner) }
+    const rel = px - rowRect.left
+    // ¿se soltó sobre una pila de libros acostados?
+    let pile = null
+    const canPile = en.type === 'deco' || en.ref.lying
+    if (canPile) {
+      const k = pileUnder(px, py, d)
+      pile = (k && all.find((b) => b.key === k)) || rows[ri]?.find((b) => b.type === 'pile' && b.key !== d.blockKey && rel >= b.left - 4 && rel <= b.left + b.w + 4)
     }
-    const pileKey = pileUnder(px, py, d)
-    const pile = pileKey && all.find((b) => b.key === pileKey)
-    if (pile && pile.type === 'pile') {
-      const pos = Math.max(0, ...pile.entries.map((x) => x.ref.position || 0)) + 1
+    // todo queda fijo donde está ahora, menos lo que se movió
+    const next = {}
+    for (const e of entries) next[e.eid] = { ...spotOf[e.eid] }
+    if (pile) {
       if (en.type === 'deco') {
         if (pile.top && pile.top.eid !== d.eid) { onFull?.('Esa pila ya tiene algo arriba'); return }
-        ups.push({ eid: d.eid, ...spot(pile), stacked: true })
-      } else if (pile.entries.length >= 5) { onFull?.('Esa pila ya tiene 5 libros'); return }
-      else ups.push({ eid: d.eid, ...spot(pile), position: pos })
-      return onMove?.(ups)
+        next[d.eid] = { ...spotOf[pile.entries[0].eid], stacked: true }
+      } else {
+        if (pile.entries.length >= 5) { onFull?.('Esa pila ya tiene 5 libros'); return }
+        next[d.eid] = { ...spotOf[pile.entries[0].eid], position: Math.max(0, ...pile.entries.map((x) => x.ref.position || 0)) + 1 }
+      }
+    } else {
+      next[d.eid] = { row: ri, x: rnd(Math.max(0, rel - d.offX) / inner), ...(en.type === 'deco' ? { stacked: false } : {}) }
     }
-    const me = entryDims(en)
-    const others = rows[ri].filter((b) => !(b.entries.length === 1 && !b.top && b.entries[0].eid === d.eid))
-      .map((b) => (b.top?.eid === d.eid || b.entries.some((x) => x.eid === d.eid)) ? measure({ ...b, entries: b.entries.filter((x) => x.eid !== d.eid), top: b.top?.eid === d.eid ? null : b.top }) : b)
-      .filter((b) => b.entries.length || b.top)
-    const want = px - d.offX - rowRect.left
-    const left = nearestFree(others, me.w, want, inner)
-    if (left == null) { onFull?.('No entra en ese estante'); return }
-    ups.push({ eid: d.eid, row: ri, x: rnd(left / inner), ...(en.type === 'deco' ? { stacked: false } : { position: en.ref.position }) })
+    // se vuelve a armar el estante: los de al lado se corren para hacerle lugar
+    const moved = entries.map((e) => ({ ...e, ref: { ...e.ref, shelf_row: next[e.eid].row, shelf_x: next[e.eid].x, ...(next[e.eid].stacked !== undefined ? { stacked: next[e.eid].stacked } : {}), ...(next[e.eid].position !== undefined ? { position: next[e.eid].position } : {}) } }))
+    const final = layoutShelf(moved, inner, false).flatMap((r) => r)
+    const ups = []
+    for (const b of final) for (const x of [...b.entries, ...(b.top ? [b.top] : [])]) {
+      const o = entries.find((e) => e.eid === x.eid).ref
+      const u = { eid: x.eid, row: b.row, x: rnd(b.left / inner) }
+      if (x.eid === d.eid) { if (next[d.eid].stacked !== undefined) u.stacked = next[d.eid].stacked; if (next[d.eid].position !== undefined) u.position = next[d.eid].position }
+      if (u.stacked !== undefined || u.position !== undefined || o.shelf_row !== u.row || o.shelf_x == null || Math.abs(o.shelf_x - u.x) > 0.0001) ups.push(u)
+    }
+    // las piles: todos sus libros y lo de arriba comparten el mismo lugar
+    for (const b of final) if (b.type === 'pile') {
+      const x = rnd(b.left / inner)
+      for (const e of [...b.entries, ...(b.top ? [b.top] : [])]) { const u = ups.find((y) => y.eid === e.eid); if (u) u.x = x; else ups.push({ eid: e.eid, row: b.row, x }) }
+    }
     onMove?.(ups)
   }
 
