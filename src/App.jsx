@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sb } from './supabase.js'
 import { Nav, Toast } from './ui.jsx'
 import { Intro, Login, ProfileSetup } from './screens/Auth.jsx'
+import Landing from './screens/Landing.jsx'
 import { Home } from './screens/Home.jsx'
 import { AddSheet } from './screens/Add.jsx'
 import { Detail } from './screens/Detail.jsx'
@@ -15,15 +16,19 @@ import { Shop } from './screens/Arrange.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
+let fromLink = false
 try {
   const rm = location.pathname.match(/^\/r\/([a-z0-9_.]+)/i)
-  if (rm) { localStorage.setItem('teca.ref', rm[1].toLowerCase()); history.replaceState({}, '', '/') }
+  if (rm) { fromLink = true; localStorage.setItem('teca.ref', rm[1].toLowerCase()); history.replaceState({}, '', '/') }
   const m = location.pathname.match(/^\/regalo\/([a-z0-9-]+)/i)
   const g = m ? m[1] : new URLSearchParams(location.search).get('regalo')
-  if (g) { localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/') }
+  if (g) { fromLink = true; localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/') }
 } catch {}
+// La landing la ven solo quienes llegan sin sesión desde el navegador (no la app instalada ni los links de regalo/invitación)
+const landingOK = !isStandalone() && !fromLink && location.pathname === '/' && !new URLSearchParams(location.search).has('entrar')
 
 export default function App() {
+  const [entered, setEntered] = useState(null)
   const [intro, setIntro] = useState(true)
   const [session, setSession] = useState(undefined)
   const [profile, setProfile] = useState(undefined)
@@ -146,8 +151,9 @@ export default function App() {
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')
   if (isAdminPage && session !== undefined && !(session && profile === undefined)) return session ? <><AdminApp session={session} profile={profile} say={say} /><Toast msg={toast} /></> : <div className="app"><Login say={say} /><Toast msg={toast} /></div>
+  if (landingOK && !entered && session === null) return <Landing onEnter={(m) => { setEntered(m); window.scrollTo(0, 0) }} />
   if (intro || session === undefined || (session && profile === undefined)) return <Intro />
-  if (!session) return <div className="app"><Login say={say} /><Toast msg={toast} /></div>
+  if (!session) return <div className="app"><Login say={say} initialMode={entered} /><Toast msg={toast} /></div>
   if (!profile) return <div className="app"><ProfileSetup ctx={ctx} /><Toast msg={toast} /></div>
 
   const screens = {

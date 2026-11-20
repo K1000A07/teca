@@ -51,7 +51,7 @@ async function openLibrary(q, author, many) {
   })
   if (q) params.set('title', q)
   if (author) params.set('author', author)
-  const j = await (await fetch(`https://openlibrary.org/search.json?${params}`, { headers: { 'User-Agent': 'teca (teca-tau.vercel.app)' } })).json()
+  const j = await (await fetch(`https://openlibrary.org/search.json?${params}`, { headers: { 'User-Agent': 'teca (appteca.com.ar)' } })).json()
   return (j.docs || []).map((d) => {
     const ed = d.editions?.docs?.[0]
     const spa = ed && (ed.language || []).includes('spa')

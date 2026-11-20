@@ -134,3 +134,8 @@ textarea.input { font-weight: 300; font-size: 15px; line-height: 1.45; min-heigh
 .demo-card { animation: demoSide 4.4s cubic-bezier(.4,0,.2,1) infinite; }
 .demo-finger { animation: demoFinger 4.4s cubic-bezier(.4,0,.2,1) infinite; }
 @media (prefers-reduced-motion: reduce) { .demo-sheet, .demo-card, .demo-finger { animation: none; } }
+
+/* landing */
+@keyframes tecaFloat { 0%, 100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-10px) rotate(2deg) } }
+@keyframes tecaSpin { from { transform: rotate(0) } to { transform: rotate(360deg) } }
+@keyframes tecaMarq { from { transform: translateX(0) } to { transform: translateX(-50%) } }

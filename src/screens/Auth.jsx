@@ -41,8 +41,8 @@ function InviteBanner() {
   )
 }
 
-export function Login({ say }) {
-  const [mode, setMode] = useState(null) // null | 'in' | 'up' | 'sent'
+export function Login({ say, initialMode = null }) {
+  const [mode, setMode] = useState(initialMode) // null | 'in' | 'up' | 'sent'
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [err, setErr] = useState('')

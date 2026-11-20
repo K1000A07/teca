@@ -9,7 +9,8 @@ App social (PWA) de Cami (Camila Manucci, directora de arte, Buenos Aires) para 
 Cami escribe en castellano rioplatense (vos), prefiere respuestas directas, sin vueltas ni lenguaje corporativo, con poco formato. Es diseñadora: le importa mucho cómo se ve y se siente cada cosa.
 
 ## Dónde está todo
-- App en vivo: https://teca-tau.vercel.app (panel de admin en /admin, usuario admin: k1000a)
+- App en vivo: https://appteca.com.ar (dominio comprado en NIC Argentina el 20/11/2026; también responde https://teca-tau.vercel.app). Panel de admin en /admin, usuario admin: k1000a
+- Landing: `src/screens/Landing.jsx` + `src/landing/celu.html` y `compu.html` (sacados del brandbook L1/L2). La ve solo quien entra sin sesión desde el navegador a `/`; la app instalada, los links /r/ y /regalo/ y `/?entrar` van directo al login.
 - Código: https://github.com/K1000A07/teca (rama main; Vercel publica solo en cada push)
 - Base de datos y login: Supabase, proyecto `oeppdldydozrraebsquz`
 - Hosting y funciones: Vercel, proyecto k1000a07/teca
