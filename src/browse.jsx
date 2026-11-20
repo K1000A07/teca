@@ -32,7 +32,7 @@ export function BrowseBar({ b, kind }) {
     </button>
   )
   return (
-    <div style={{ padding: '12px 20px 0' }}>
+    <div style={{ padding: '16px 20px 0' }}>
       <div className="row" style={{ gap: 8 }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <span style={{ position: 'absolute', left: 12, top: 13, opacity: .55 }}><Icon n="search" s={20} /></span>
@@ -73,7 +73,7 @@ export function ListView({ items, kind, onOpen, empty }) {
     : new Date(b.finished_at || b.created_at) - new Date(a.finished_at || a.created_at))
   if (!items.length) return <div className="pad" style={{ marginTop: 20, fontWeight: 300, fontSize: 15 }}>{empty}</div>
   return (
-    <div className="pad" style={{ marginTop: 12, paddingBottom: 120 }}>
+    <div className="pad" style={{ marginTop: 0, paddingBottom: 120 }}>
       <div className="row" style={{ gap: 6, marginBottom: 6 }}>
         {[['recent', 'recientes'], ['stars', 'mejor puntaje'], ['az', 'a–z']].map(([k, l]) => <button key={k} className={`chip ${sort === k ? 'on' : ''}`} style={{ padding: '5px 11px', fontSize: 12.5 }} onClick={() => setSort(k)}>{l}</button>)}
       </div>

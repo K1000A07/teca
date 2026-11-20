@@ -164,6 +164,7 @@ export function FriendTeca({ ctx, person: initial }) {
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />
         {items && items.some((i) => i.kind === kind) && <BrowseBar b={b} kind={kind} />}
+        <div style={{ height: 24 }} />
         {items && b.view === 'list' && <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." />}
         {items && b.view !== 'list' && <Shelf packed={b.active} entries={buildEntries(items, decos, kind).filter((e) => !b.active || (e.type === 'item' && b.match(e.ref)))} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} />}
       </>) : (

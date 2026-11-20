@@ -124,7 +124,7 @@ export function Home({ ctx }) {
         </div>
       )}
       {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} />}
-      <div style={{ height: 14 }} />
+      <div style={{ height: !editing && mine.length > 0 ? 24 : 14 }} />
       {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." /> :
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} onSelect={(e) => setSel(sel === e ? null : e)}

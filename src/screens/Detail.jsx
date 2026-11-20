@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { toggleSave as saveIt } from '../save.js'
 import { sb } from '../supabase.js'
 import { Avatar, Cover, Sheet, Stars } from '../ui.jsx'
@@ -16,17 +16,17 @@ export function Review({ text, lines = 4, size = 15 }) {
   </>)
 }
 
-// Con una lista (la teca de alguien) se puede deslizar a los costados para ver el anterior y el siguiente
+const Chevron = ({ d }) => <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' }}><path d={d < 0 ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} /></svg>
+
+// Con una lista (la teca de alguien) se puede deslizar a los costados para ver el anterior y el siguiente.
+// La tarjeta queda siempre del mismo alto y la información se acomoda adentro.
 export function Detail({ ctx, it, list, onClose }) {
   const [cur, setCur] = useState(it)
+  const [editing, setEditing] = useState(null)
   const items = Array.isArray(list) && list.length > 1 ? list : null
   const idx = items ? items.findIndex((x) => x.id === cur.id) : -1
   const go = (d) => { if (!items) return; const n = items[idx + d]; if (n) setCur(n) }
   const nav = items && idx >= 0 ? { idx, total: items.length, prev: idx > 0 ? () => go(-1) : null, next: idx < items.length - 1 ? () => go(1) : null } : null
-  return <DetailBody key={cur.id} ctx={ctx} it={cur} nav={nav} onClose={onClose} />
-}
-
-function DetailBody({ ctx, it, nav, onClose }) {
   const touch = useRef(null)
   const [slide, setSlide] = useState(0)
   const onTouchStart = (e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY, h: null } }
@@ -43,7 +43,29 @@ function DetailBody({ ctx, it, nav, onClose }) {
     if (dx < -60 && nav.next) nav.next()
     else if (dx > 60 && nav.prev) nav.prev()
   }
-  const [editing, setEditing] = useState(false)
+  if (editing) return <AddSheet ctx={ctx} edit={editing} onClose={() => { setEditing(null); onClose() }} />
+  const arrow = (d, fn, label) => (
+    <button aria-label={label} disabled={!fn} onClick={fn || undefined} style={{ width: 40, height: 32, border: 0, background: 'none', padding: 0, display: 'grid', placeItems: 'center', color: 'var(--ink)', opacity: fn ? 1 : .2, cursor: fn ? 'pointer' : 'default' }}><Chevron d={d} /></button>
+  )
+  return (
+    <Sheet onClose={onClose} height={nav ? '76dvh' : undefined}>
+      {nav && (
+        <div className="between" style={{ margin: '-4px -8px 10px' }}>
+          {arrow(-1, nav.prev, 'Anterior')}
+          <span className="light">{nav.idx + 1} de {nav.total}</span>
+          {arrow(1, nav.next, 'Siguiente')}
+        </div>
+      )}
+      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ minHeight: 'calc(100% - 90px)', transform: slide ? `translateX(${slide}px)` : undefined, transition: slide ? 'none' : 'transform .2s ease' }}>
+        <DetailBody key={cur.id} ctx={ctx} it={cur} onClose={onClose} onEdit={setEditing} />
+      </div>
+    </Sheet>
+  )
+}
+
+function DetailBody({ ctx, it, onClose, onEdit }) {
+  const top = useRef(null)
+  useEffect(() => { top.current?.closest('.sheet')?.scrollTo(0, 0) }, [])
   const mine = it.user_id === ctx.uid
   const owner = mine ? ctx.profile : ctx.people[it.user_id]
   const current = mine ? ctx.items.find((x) => x.id === it.id) || it : it
@@ -59,18 +81,9 @@ function DetailBody({ ctx, it, nav, onClose }) {
   }
   const toggleSave = () => saveIt(ctx, it)
 
-  if (editing) return <AddSheet ctx={ctx} edit={current} onClose={() => { setEditing(false); onClose() }} />
   const meta = [current.kind === 'book' ? (current.format === 'ebook' ? 'ebook' : 'en papel') : current.seen_where === 'cine' ? 'en el cine' : current.platform ? `en ${current.platform}` : 'en casa', fmtDate(current.finished_at)]
   return (
-    <Sheet onClose={onClose}>
-      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ transform: slide ? `translateX(${slide}px)` : undefined, transition: slide ? 'none' : 'transform .2s ease' }}>
-      {nav && (
-        <div className="between" style={{ marginTop: -6, marginBottom: 2 }}>
-          <button className="iconbtn" aria-label="Anterior" disabled={!nav.prev} onClick={nav.prev || undefined} style={{ width: 34, height: 34, opacity: nav.prev ? 1 : .25, fontSize: 20, fontWeight: 800 }}>‹</button>
-          <span className="light">{nav.idx + 1} de {nav.total} · deslizá</span>
-          <button className="iconbtn" aria-label="Siguiente" disabled={!nav.next} onClick={nav.next || undefined} style={{ width: 34, height: 34, opacity: nav.next ? 1 : .25, fontSize: 20, fontWeight: 800 }}>›</button>
-        </div>
-      )}
+    <div ref={top}>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 18px' }}><div style={{ transform: 'rotate(-3deg)' }}><Cover it={current} w={108} /></div></div>
       <h2 className="h" style={{ fontSize: 32 }}>{current.title}</h2>
       <div className="between" style={{ marginTop: 8 }}><span className="light">{[current.creator, current.year].filter(Boolean).join(' · ')}</span><Stars n={current.stars || 0} s={17} /></div>
@@ -91,8 +104,7 @@ function DetailBody({ ctx, it, nav, onClose }) {
             <div style={{ flex: 1, minWidth: 0 }}><div className="between"><b style={{ fontSize: 14 }}>{p?.name}</b><Stars n={o.stars || 0} s={11} /></div>{o.review && <div style={{ marginTop: 3 }}><Review text={o.review} lines={2} size={14} /></div>}</div>
           </div>) })}
       </>)}
-      {mine && <div style={{ marginTop: 16, textAlign: 'center', fontWeight: 300, fontSize: 13 }}><button className="linkbtn" style={{ fontWeight: 300 }} onClick={() => setEditing(true)}>Editar</button> · <button className="linkbtn" style={{ fontWeight: 300 }} onClick={del}>Borrar</button></div>}
-      </div>
-    </Sheet>
+      {mine && <div style={{ marginTop: 16, textAlign: 'center', fontWeight: 300, fontSize: 13 }}><button className="linkbtn" style={{ fontWeight: 300 }} onClick={() => onEdit(current)}>Editar</button> · <button className="linkbtn" style={{ fontWeight: 300 }} onClick={del}>Borrar</button></div>}
+    </div>
   )
 }
