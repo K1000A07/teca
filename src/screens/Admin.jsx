@@ -75,7 +75,7 @@ export function AdminApp({ session, profile, say }) {
   const [kind, setKind] = useState('all')
   useEffect(() => {
     if (!profile?.is_admin) return
-    sb.rpc('admin_users').then(({ data, error }) => setUsers(error ? [] : data || []))
+    sb.rpc('admin_users').then(({ data, error }) => setUsers(error || !Array.isArray(data) ? [] : data))
     sb.from('items').select('*').order('created_at', { ascending: false }).limit(500).then(({ data }) => setItems(data || []))
   }, [profile?.is_admin])
   const byId = useMemo(() => Object.fromEntries((users || []).map((u) => [u.id, u])), [users])
