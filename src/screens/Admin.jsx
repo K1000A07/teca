@@ -5,6 +5,7 @@ import { KINDS, timeAgo } from '../lib.js'
 import { GiftsPanel } from './Profile.jsx'
 import { Review } from './Detail.jsx'
 import { BoardPanel } from './Board.jsx'
+import { BudgetPanel, ContentPanel, TasksPanel } from './Work.jsx'
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 const DAY = 864e5
@@ -92,7 +93,7 @@ export function AdminApp({ session, profile, say }) {
   const week = Date.now() - 7 * DAY
   const filteredUsers = (users || []).filter((u) => !q || [u.name, u.username, u.email].some((x) => (x || '').toLowerCase().includes(q.toLowerCase())))
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
-  const T = [['resumen', 'Resumen'], ['tablero', 'Tablero'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']]
+  const T = [['resumen', 'Resumen'], ['tablero', 'Tablero'], ['tareas', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']]
   return (
     <div className="admin">
       <header className="between" style={{ flexWrap: 'wrap', gap: 16, padding: '28px 0 8px' }}>
@@ -105,7 +106,7 @@ export function AdminApp({ session, profile, say }) {
       </header>
       <nav className="row" style={{ gap: 8, padding: '14px 0 26px', flexWrap: 'wrap' }}>{T.map(([k, l]) => <button key={k} className={`chip ${tab === k ? 'on' : ''}`} style={{ fontSize: 15, padding: '10px 18px' }} onClick={() => setTab(k)}>{l}</button>)}</nav>
 
-      {tab === 'tablero' ? <BoardPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      {tab === 'tablero' ? <BoardPanel say={say} /> : tab === 'tareas' ? <TasksPanel say={say} /> : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />

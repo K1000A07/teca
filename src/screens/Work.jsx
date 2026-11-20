@@ -1,0 +1,276 @@
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { sb } from '../supabase.js'
+
+// Panel de trabajo (solo admin): tareas, contenido para redes y presupuesto.
+const DAY = 864e5
+const num = (v) => (v === '' || v == null || isNaN(+v) ? 0 : +v)
+const fmtN = (n) => (n >= 10000 ? `${Math.round(n / 1000)} mil` : n.toLocaleString('es-AR'))
+const fmtD = (d) => (d ? new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) : '')
+const box = { background: 'var(--cell)', borderRadius: 24, padding: 16 }
+const h2 = { fontWeight: 800, fontSize: 22, letterSpacing: '-0.04em', margin: 0 }
+const sub = { fontWeight: 300, fontSize: 13, margin: '4px 0 12px' }
+const card = (bg = '#fff') => ({ background: bg, borderRadius: 16, padding: '12px 14px', boxShadow: 'inset 0 0 0 1.5px var(--ink)' })
+
+function useTable(table, order = 'position') {
+  const [rows, setRows] = useState(null)
+  useEffect(() => { sb.from(table).select('*').order(order).order('created_at').then(({ data, error }) => setRows(error ? [] : data || [])) }, [table])
+  const save = async (r, say) => {
+    const { id, created_at, ...patch } = r
+    setRows((xs) => xs.map((x) => (x.id === id ? { ...x, ...patch } : x)))
+    const { error } = await sb.from(table).update(patch).eq('id', id)
+    if (error) say?.('No se pudo guardar')
+  }
+  const add = async (r, say) => {
+    const { data, error } = await sb.from(table).insert(r).select().single()
+    if (error) return say?.('No se pudo guardar')
+    setRows((xs) => [...xs, data]); return data
+  }
+  const del = async (r) => { setRows((xs) => xs.filter((x) => x.id !== r.id)); await sb.from(table).delete().eq('id', r.id) }
+  return { rows, save, add, del }
+}
+
+function Field({ label, children }) {
+  return <label style={{ display: 'grid', gap: 4, fontWeight: 300, fontSize: 12 }}><span className="light" style={{ fontSize: 10.5 }}>{label}</span>{children}</label>
+}
+function Editable({ value, onSave, placeholder, area, style }) {
+  const [v, setV] = useState(value || '')
+  useEffect(() => setV(value || ''), [value])
+  const P = { className: 'input', value: v, placeholder, onChange: (e) => setV(e.target.value), onBlur: () => v !== (value || '') && onSave(v), style: { padding: '9px 11px', fontSize: 14, ...style } }
+  return area ? <textarea rows={3} {...P} style={{ ...P.style, fontFamily: 'inherit', resize: 'vertical', fontWeight: 300 }} /> : <input {...P} />
+}
+
+// ---------- TAREAS ----------
+export const PRIORITIES = [['ahora', 'Ahora', 'Noviembre y diciembre: cosas gratis o baratas que se pueden hacer ya.'], ['antes', 'Antes de marzo', 'Para tener todo listo cuando arranque la app.'], ['app', 'Desde marzo', 'Cuando empecemos con la app para las tiendas.']]
+const AREAS = [['', 'Todas'], ['admin', 'Administrativo'], ['creativo', 'Creativo']]
+
+function TaskCard({ t, save, del }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ ...card(t.done ? '#F3F1EC' : '#fff'), opacity: t.done ? .6 : 1 }}>
+      <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
+        <input type="checkbox" checked={!!t.done} onChange={(e) => save({ ...t, done: e.target.checked })} aria-label="Hecha" style={{ marginTop: 3, width: 18, height: 18, accentColor: '#141210' }} />
+        <button onClick={() => setOpen(!open)} style={{ flex: 1, textAlign: 'left', border: 0, background: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
+          <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em', lineHeight: 1.2, textDecoration: t.done ? 'line-through' : 'none' }}>{t.title}</div>
+          <div className="row" style={{ gap: 6, marginTop: 6 }}>
+            <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 99, background: t.area === 'creativo' ? 'var(--cel)' : 'var(--lim)' }}>{t.area === 'creativo' ? 'creativo' : 'administrativo'}</span>
+            {t.cost && <span style={{ fontSize: 12, fontWeight: 300 }}>{t.cost}</span>}
+          </div>
+          {!open && t.body && <div style={{ fontWeight: 300, fontSize: 13, marginTop: 6, lineHeight: 1.35 }}>{t.body}</div>}
+        </button>
+      </div>
+      {open && (
+        <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+          <Editable value={t.title} onSave={(v) => save({ ...t, title: v })} />
+          <Editable area value={t.body} onSave={(v) => save({ ...t, body: v })} placeholder="Notas" />
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={t.area} onChange={(e) => save({ ...t, area: e.target.value })}>{AREAS.slice(1).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={t.priority} onChange={(e) => save({ ...t, priority: e.target.value })}>{PRIORITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+            <Editable value={t.cost} onSave={(v) => save({ ...t, cost: v || null })} placeholder="Costo (opcional)" style={{ width: 160 }} />
+          </div>
+          <div className="between"><button className="linkbtn" style={{ fontSize: 13 }} onClick={() => setOpen(false)}>Listo</button><button className="linkbtn" style={{ fontSize: 13, color: '#B33' }} onClick={() => confirm('¿Borrar esta tarea?') && del(t)}>Borrar</button></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function TasksPanel({ say }) {
+  const T = useTable('admin_tasks')
+  const [area, setArea] = useState('')
+  const [adding, setAdding] = useState(null)
+  const [title, setTitle] = useState('')
+  const [newArea, setNewArea] = useState('admin')
+  if (!T.rows) return <p className="body muted">Cargando…</p>
+  const shown = T.rows.filter((t) => !area || t.area === area)
+  const add = async (priority) => { if (title.trim()) await T.add({ title: title.trim(), area: newArea, priority, position: 999 }, say); setTitle(''); setAdding(null) }
+  return (<>
+    <div className="row" style={{ gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+      {AREAS.map(([k, l]) => <button key={k} className={`chip ${area === k ? 'on' : ''}`} onClick={() => setArea(k)}>{l}</button>)}
+      <span className="light" style={{ marginLeft: 'auto' }}>{T.rows.filter((t) => t.done).length} de {T.rows.length} hechas</span>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, alignItems: 'start' }}>
+      {PRIORITIES.map(([k, l, s]) => {
+        const list = shown.filter((t) => t.priority === k).sort((a, b) => (a.done - b.done) || (a.position - b.position))
+        return (
+          <section key={k} style={box}>
+            <div className="between"><h2 style={h2}>{l}</h2><span className="light">{list.filter((t) => t.done).length}/{list.length}</span></div>
+            <p style={sub}>{s}</p>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {list.map((t) => <TaskCard key={t.id} t={t} save={(r) => T.save(r, say)} del={T.del} />)}
+              {adding === k
+                ? <div style={{ display: 'grid', gap: 6 }}>
+                    <input className="input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add(k)} placeholder="Nueva tarea" />
+                    <div className="row" style={{ gap: 6 }}>{AREAS.slice(1).map(([a, al]) => <button key={a} className={`chip ${newArea === a ? 'on' : ''}`} style={{ fontSize: 12.5, padding: '5px 10px' }} onClick={() => setNewArea(a)}>{al}</button>)}</div>
+                    <div className="row" style={{ gap: 8 }}><button className="chip on" onClick={() => add(k)}>Agregar</button><button className="linkbtn" onClick={() => { setAdding(null); setTitle('') }}>Cancelar</button></div>
+                  </div>
+                : <button className="chip" style={{ justifyContent: 'center', background: 'transparent' }} onClick={() => setAdding(k)}>+ Agregar</button>}
+            </div>
+          </section>
+        )
+      })}
+    </div>
+  </>)
+}
+
+// ---------- CONTENIDO ----------
+export const STAGES = [['idea', 'Idea'], ['guion', 'Guion'], ['grabando', 'Grabando'], ['editando', 'Editando'], ['publicado', 'Publicado']]
+const PLATFORMS = ['TikTok', 'Instagram', 'YouTube', 'Otra']
+const METRICS = [['views', 'Vistas'], ['likes', 'Me gusta'], ['comments', 'Comentarios'], ['shares', 'Compartidos'], ['saves', 'Guardados'], ['follows', 'Seguidores nuevos']]
+const eng = (v) => { const m = v.metrics || {}; const vw = num(m.views); return vw ? (num(m.likes) + num(m.comments) + num(m.shares) + num(m.saves)) / vw : 0 }
+const pct = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`
+
+function VideoCard({ v, save, del }) {
+  const [open, setOpen] = useState(false)
+  const i = STAGES.findIndex(([k]) => k === v.status)
+  const move = (d) => { const n = STAGES[i + d]; if (n) save({ ...v, status: n[0], ...(n[0] === 'publicado' && !v.published_at ? { published_at: new Date().toISOString().slice(0, 10) } : {}) }) }
+  const m = v.metrics || {}
+  const setM = (k, val) => save({ ...v, metrics: { ...m, [k]: val === '' ? null : +val } })
+  return (
+    <div style={card()}>
+      <button onClick={() => setOpen(!open)} style={{ width: '100%', textAlign: 'left', border: 0, background: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
+        <div style={{ fontWeight: 800, fontSize: 14.5, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{v.title}</div>
+        <div className="row" style={{ gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+          {v.platform && <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 99, background: 'var(--cel)' }}>{v.platform}</span>}
+          {(v.tags || '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => <span key={t} style={{ fontSize: 11.5, fontWeight: 300 }}>#{t}</span>)}
+        </div>
+        {v.status === 'publicado' && num(m.views) > 0 && <div style={{ marginTop: 6, fontSize: 12.5, fontWeight: 800 }}>{fmtN(num(m.views))} vistas · {pct(eng(v))} interacción</div>}
+      </button>
+      <div className="between" style={{ marginTop: 8 }}>
+        <button className="linkbtn" style={{ fontSize: 12.5, opacity: i > 0 ? 1 : .25 }} disabled={i === 0} onClick={() => move(-1)}>← {STAGES[i - 1]?.[1] || ''}</button>
+        <button className="linkbtn" style={{ fontSize: 12.5, opacity: i < STAGES.length - 1 ? 1 : .25 }} disabled={i === STAGES.length - 1} onClick={() => move(1)}>{STAGES[i + 1]?.[1] || ''} →</button>
+      </div>
+      {open && (
+        <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+          <Editable value={v.title} onSave={(x) => save({ ...v, title: x })} />
+          <Editable area value={v.body} onSave={(x) => save({ ...v, body: x })} placeholder="Idea, guion, notas" />
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={v.platform || ''} onChange={(e) => save({ ...v, platform: e.target.value || null })}><option value="">Plataforma</option>{PLATFORMS.map((p) => <option key={p}>{p}</option>)}</select>
+            <Editable value={v.tags} onSave={(x) => save({ ...v, tags: x || null })} placeholder="Etiquetas: pov, tour, humor" style={{ flex: 1, minWidth: 160 }} />
+          </div>
+          {v.status === 'publicado' && (<>
+            <Field label="Link"><Editable value={v.link} onSave={(x) => save({ ...v, link: x || null })} placeholder="https://…" /></Field>
+            <Field label="Publicado el"><input className="input" type="date" value={v.published_at || ''} onChange={(e) => save({ ...v, published_at: e.target.value || null })} style={{ padding: '9px 11px', fontSize: 14 }} /></Field>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+              {METRICS.map(([k, l]) => <Field key={k} label={l}><input className="input" type="number" min={0} defaultValue={m[k] ?? ''} onBlur={(e) => setM(k, e.target.value)} style={{ padding: '8px 9px', fontSize: 14 }} /></Field>)}
+            </div>
+            {v.link && <a href={v.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800 }}>Abrir el video ↗</a>}
+          </>)}
+          <div className="between"><button className="linkbtn" style={{ fontSize: 13 }} onClick={() => setOpen(false)}>Listo</button><button className="linkbtn" style={{ fontSize: 13, color: '#B33' }} onClick={() => confirm('¿Borrar este video?') && del(v)}>Borrar</button></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Report({ vids, say }) {
+  const pub = vids.filter((v) => v.status === 'publicado')
+  const withData = pub.filter((v) => num(v.metrics?.views) > 0)
+  const week = withData.filter((v) => v.published_at && Date.now() - new Date(v.published_at + 'T12:00:00') < 7 * DAY)
+  const byViews = [...withData].sort((a, b) => num(b.metrics.views) - num(a.metrics.views))
+  const byEng = [...withData].sort((a, b) => eng(b) - eng(a))
+  const tags = {}
+  withData.forEach((v) => (v.tags || '').split(',').map((t) => t.trim().toLowerCase()).filter(Boolean).forEach((t) => { (tags[t] ||= []).push(v) }))
+  const tagRank = Object.entries(tags).map(([t, l]) => [t, l.reduce((a, v) => a + num(v.metrics.views), 0) / l.length, l.length]).sort((a, b) => b[1] - a[1])
+  const total = (k, l = withData) => l.reduce((a, v) => a + num(v.metrics?.[k]), 0)
+  function copy() {
+    const lines = [`Datos de los videos de teca (${new Date().toLocaleDateString('es-AR')}):`, ...pub.map((v) => { const m = v.metrics || {}; return `- "${v.title}" | ${v.platform || '?'} | ${v.published_at || 's/f'} | etiquetas: ${v.tags || '-'} | vistas ${num(m.views)}, me gusta ${num(m.likes)}, comentarios ${num(m.comments)}, compartidos ${num(m.shares)}, guardados ${num(m.saves)}, seguidores ${num(m.follows)}${v.link ? ` | ${v.link}` : ''}` }), '', 'Ideas pendientes:', ...vids.filter((v) => v.status !== 'publicado').map((v) => `- ${v.title} (${v.status})`)]
+    navigator.clipboard?.writeText(lines.join('\n')).then(() => say('Copiado: pegáselo a Claude para el reporte'), () => say('No se pudo copiar'))
+  }
+  return (
+    <div style={{ background: 'var(--ink)', color: '#fff', borderRadius: 24, padding: '18px 22px', marginBottom: 22 }}>
+      <div className="between" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <div className="light" style={{ color: 'var(--lim)' }}>Cómo vienen los videos</div>
+        <button className="chip lim" style={{ fontSize: 13, padding: '7px 14px' }} onClick={copy}>Copiar datos para el reporte</button>
+      </div>
+      {!withData.length ? <p style={{ fontWeight: 300, fontSize: 14.5, margin: '10px 0 0', lineHeight: 1.4 }}>Cuando publiques un video, pasalo a "Publicado", pegá el link y cargá los números (vistas, me gusta, guardados…). Acá vas a ver qué funciona y qué no.</p> : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginTop: 12 }}>
+          <div><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{fmtN(total('views'))}</div><div style={{ fontWeight: 300, fontSize: 13, marginTop: 6 }}>vistas en {withData.length} videos · {fmtN(total('follows'))} seguidores nuevos{week.length ? ` · esta semana: ${fmtN(total('views', week))} vistas en ${week.length}` : ''}</div></div>
+          <div><div className="light" style={{ color: '#fff', opacity: .7 }}>Lo que funcionó</div><div style={{ fontWeight: 800, fontSize: 15, marginTop: 6 }}>{byViews[0].title}</div><div style={{ fontWeight: 300, fontSize: 13 }}>el más visto · {fmtN(num(byViews[0].metrics.views))}</div>{byEng[0] !== byViews[0] && <><div style={{ fontWeight: 800, fontSize: 15, marginTop: 6 }}>{byEng[0].title}</div><div style={{ fontWeight: 300, fontSize: 13 }}>el que más interacción tuvo · {pct(eng(byEng[0]))}</div></>}</div>
+          {withData.length > 1 && <div><div className="light" style={{ color: '#fff', opacity: .7 }}>Lo que no tanto</div><div style={{ fontWeight: 800, fontSize: 15, marginTop: 6 }}>{byViews[byViews.length - 1].title}</div><div style={{ fontWeight: 300, fontSize: 13 }}>{fmtN(num(byViews[byViews.length - 1].metrics.views))} vistas · {pct(eng(byViews[byViews.length - 1]))} interacción</div></div>}
+          {tagRank.length > 0 && <div><div className="light" style={{ color: '#fff', opacity: .7 }}>Por etiqueta (vistas promedio)</div>{tagRank.slice(0, 4).map(([t, avg, n]) => <div key={t} style={{ fontSize: 13.5, marginTop: 5 }}><b>#{t}</b> <span style={{ fontWeight: 300 }}>{fmtN(Math.round(avg))} · {n} {n === 1 ? 'video' : 'videos'}</span></div>)}</div>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export function ContentPanel({ say }) {
+  const V = useTable('admin_content')
+  const [adding, setAdding] = useState(false)
+  const [title, setTitle] = useState('')
+  if (!V.rows) return <p className="body muted">Cargando…</p>
+  const add = async () => { if (title.trim()) await V.add({ title: title.trim(), status: 'idea', position: 999 }, say); setTitle(''); setAdding(false) }
+  return (<>
+    <Report vids={V.rows} say={say} />
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(210px, 1fr))', gap: 12, alignItems: 'start', overflowX: 'auto', paddingBottom: 8 }}>
+      {STAGES.map(([k, l]) => {
+        const list = V.rows.filter((v) => v.status === k).sort((a, b) => (k === 'publicado' ? (b.published_at || '').localeCompare(a.published_at || '') : a.position - b.position))
+        return (
+          <section key={k} style={{ ...box, padding: 12, background: k === 'publicado' ? '#EEF3D0' : 'var(--cell)' }}>
+            <div className="between" style={{ marginBottom: 10 }}><h2 style={{ ...h2, fontSize: 18 }}>{l}</h2><span className="light">{list.length}</span></div>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {list.map((v) => <VideoCard key={v.id} v={v} save={(r) => V.save(r, say)} del={V.del} />)}
+              {k === 'idea' && (adding
+                ? <div style={{ display: 'grid', gap: 6 }}><input className="input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} placeholder="Idea de video" /><div className="row" style={{ gap: 8 }}><button className="chip on" onClick={add}>Agregar</button><button className="linkbtn" onClick={() => { setAdding(false); setTitle('') }}>Cancelar</button></div></div>
+                : <button className="chip" style={{ justifyContent: 'center', background: 'transparent' }} onClick={() => setAdding(true)}>+ Idea</button>)}
+            </div>
+          </section>
+        )
+      })}
+    </div>
+  </>)
+}
+
+// ---------- PRESUPUESTO ----------
+const FREQ = [['unico', 'pago único'], ['anual', 'por año'], ['mensual', 'por mes']]
+export function BudgetPanel({ say }) {
+  const B = useTable('admin_budget')
+  const [usd, setUsd] = useState(() => { try { return +localStorage.getItem('teca.usd') || 0 } catch { return 0 } })
+  useEffect(() => { try { localStorage.setItem('teca.usd', String(usd || '')) } catch {} }, [usd])
+  const totals = useMemo(() => {
+    const t = { ARS: { now: 0, year: 0 }, USD: { now: 0, year: 0 } }
+    for (const r of B.rows || []) {
+      if (r.optional) continue
+      const a = num(r.amount), c = r.currency === 'USD' ? 'USD' : 'ARS'
+      t[c].now += r.freq === 'mensual' ? a : a
+      t[c].year += r.freq === 'mensual' ? a * 12 : a
+    }
+    return t
+  }, [B.rows])
+  if (!B.rows) return <p className="body muted">Cargando…</p>
+  const groups = [...new Set(B.rows.map((r) => r.category))]
+  const money = (n, c) => (c === 'USD' ? `USD ${n.toLocaleString('es-AR')}` : `$${Math.round(n).toLocaleString('es-AR')}`)
+  const inArs = usd ? totals.ARS.year + totals.USD.year * usd : null
+  const td = { padding: '10px 8px', borderBottom: '1px solid rgba(20,18,16,.12)', verticalAlign: 'top', fontSize: 14 }
+  return (<>
+    <div className="admin-grid" style={{ marginBottom: 22 }}>
+      <div style={{ ...card('#E6F04A'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.ARS.year, 'ARS')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en pesos, primer año</div></div>
+      <div style={{ ...card('#A9C6F2'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.USD.year, 'USD')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en dólares, primer año</div></div>
+      <div style={{ ...card(), padding: '18px 20px' }}>
+        <div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{inArs ? money(inArs, 'ARS') : '—'}</div>
+        <div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>todo en pesos</div>
+        <label className="row" style={{ gap: 6, marginTop: 8, fontWeight: 300, fontSize: 13 }}>dólar a $<input className="input" type="number" value={usd || ''} onChange={(e) => setUsd(+e.target.value)} placeholder="cotización" style={{ width: 110, padding: '6px 9px', fontSize: 14 }} /></label>
+      </div>
+    </div>
+    <p style={{ fontWeight: 300, fontSize: 14, margin: '0 0 14px' }}>Montos estimados, solo vos (sin equipo). Lo marcado como opcional no suma al total. Tocá cualquier monto para corregirlo cuando sepas el valor real.</p>
+    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <thead><tr>{['Concepto', 'Monto', '', 'Frecuencia', 'Estado', ''].map((h, i) => <th key={i} className="light" style={{ textAlign: 'left', padding: '0 8px 8px', fontSize: 10.5 }}>{h}</th>)}</tr></thead>
+      <tbody>
+        {groups.map((g) => (<Fragment key={g}>
+          <tr><td colSpan={6} style={{ padding: '18px 8px 6px', fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em' }}>{g}</td></tr>
+          {B.rows.filter((r) => r.category === g).sort((a, b) => a.position - b.position).map((r) => (
+            <tr key={r.id} style={{ opacity: r.optional ? .55 : 1 }}>
+              <td style={td}><div style={{ fontWeight: 800 }}>{r.concept}</div>{r.note && <div style={{ fontWeight: 300, fontSize: 12.5, marginTop: 3, maxWidth: 480 }}>{r.note}</div>}</td>
+              <td style={{ ...td, width: 130 }}><input className="input" type="number" defaultValue={r.amount ?? ''} onBlur={(e) => B.save({ ...r, amount: e.target.value === '' ? null : +e.target.value }, say)} style={{ padding: '7px 9px', fontSize: 14 }} /></td>
+              <td style={{ ...td, width: 80 }}><select className="input" value={r.currency} onChange={(e) => B.save({ ...r, currency: e.target.value }, say)} style={{ padding: '7px 6px', fontSize: 13 }}><option>ARS</option><option>USD</option></select></td>
+              <td style={{ ...td, width: 120 }}><select className="input" value={r.freq} onChange={(e) => B.save({ ...r, freq: e.target.value }, say)} style={{ padding: '7px 6px', fontSize: 13 }}>{FREQ.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></td>
+              <td style={{ ...td, width: 130 }}><button className={`chip ${r.paid ? 'on' : ''}`} style={{ fontSize: 12, padding: '5px 10px' }} onClick={() => B.save({ ...r, paid: !r.paid }, say)}>{r.paid ? 'pagado' : 'pendiente'}</button></td>
+              <td style={{ ...td, width: 90 }}><button className="linkbtn" style={{ fontSize: 12 }} onClick={() => B.save({ ...r, optional: !r.optional }, say)}>{r.optional ? 'sumar' : 'opcional'}</button></td>
+            </tr>
+          ))}
+        </Fragment>))}
+      </tbody>
+    </table>
+    <button className="chip" style={{ marginTop: 14 }} onClick={() => { const c = prompt('¿Qué gasto querés sumar?'); if (c) B.add({ concept: c, category: 'Otros', currency: 'ARS', freq: 'unico', position: 999 }, say) }}>+ Sumar un gasto</button>
+  </>)
+}
