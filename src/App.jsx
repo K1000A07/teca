@@ -1,4 +1,5 @@
 import { firstTeca } from './browse.jsx'
+import { isNear } from './screens/Board.jsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { sb } from './supabase.js'
 import { Nav, Toast } from './ui.jsx'
@@ -141,6 +142,18 @@ export default function App() {
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen) || saveRewards.some((r) => new Date(r.created_at).getTime() > lastSeen)
 
   useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
+  // Admin: avisar una vez por día si se acerca algo del tablero
+  useEffect(() => {
+    if (!profile?.is_admin) return
+    const today = new Date().toISOString().slice(0, 10)
+    if (localStorage.getItem('teca.boardnote') === today) return
+    sb.from('admin_board').select('title,due,remind_days,done').not('due', 'is', null).eq('done', false).then(({ data }) => {
+      const near = (Array.isArray(data) ? data : []).filter(isNear).sort((a, b) => a.due.localeCompare(b.due))
+      if (!near.length) return
+      localStorage.setItem('teca.boardnote', today)
+      setTimeout(() => say(`Se acerca: ${near[0].title}${near.length > 1 ? ` (y ${near.length - 1} más en el tablero)` : ''}`), 1500)
+    })
+  }, [profile?.is_admin])
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
