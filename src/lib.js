@@ -159,7 +159,7 @@ async function openLibrary(q, author) {
   }))
 }
 
-export const fmtDate = (d) => new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+export const fmtDate = (d) => (d ? new Date(d + (d.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) : '')
 export function timeAgo(ts) {
   const s = (Date.now() - new Date(ts).getTime()) / 1000
   if (s < 3600) return `hace ${Math.max(1, Math.round(s / 60))} min`

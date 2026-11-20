@@ -6,6 +6,7 @@ import { Shelf, buildEntries } from '../shelf.jsx'
 import { KINDS, timeAgo, dustInfo } from '../lib.js'
 import { TopBar, TecaTabs, useSwipe } from './Home.jsx'
 import { Review } from './Detail.jsx'
+import { toggleSave } from '../save.js'
 
 function AddFriend({ ctx, onClose }) {
   const [q, setQ] = useState('')
@@ -91,13 +92,10 @@ function Post({ ctx, it, isNew }) {
   const p = ctx.people[it.user_id]
   const saved = ctx.saved.some((s) => s.id === it.id)
   const already = ctx.items.some((m) => m.kind === it.kind && m.title.toLowerCase() === it.title.toLowerCase())
-  async function toggle() {
-    if (saved) { await sb.from('saved').delete().eq('user_id', ctx.uid).eq('item_id', it.id); ctx.setSaved((s) => s.filter((x) => x.id !== it.id)) }
-    else { await sb.from('saved').insert({ user_id: ctx.uid, item_id: it.id }); ctx.setSaved((s) => [it, ...s]) }
-  }
+  const toggle = () => toggleSave(ctx, it)
   return (
     <div className="post">
-      <div className="row" style={{ gap: 9 }}><Avatar p={p} s={30} /><div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.02em' }}>{p?.name} <span style={{ fontWeight: 300 }}>{it.kind === 'book' ? 'leyó' : 'vio'} · {timeAgo(it.created_at)}</span></div></div>
+      <button className="row" aria-label={`Ver la teca de ${p?.name}`} onClick={() => p && ctx.go('friend', { person: p })} style={{ gap: 9, border: 0, background: 'none', padding: 0, textAlign: 'left', color: 'inherit', cursor: 'pointer' }}><Avatar p={p} s={30} /><div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.02em' }}>{p?.name} <span style={{ fontWeight: 300 }}>{it.kind === 'book' ? 'leyó' : 'vio'} · {timeAgo(it.created_at)}</span></div></button>
       <button onClick={() => ctx.openSheet({ t: 'detail', it })} className="row" style={{ alignItems: 'flex-start', gap: 14, marginTop: 12, border: 0, background: 'none', padding: 0, textAlign: 'left', width: '100%' }}>
         <Cover it={it} w={72} />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -166,8 +164,8 @@ export function FriendTeca({ ctx, person: initial }) {
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />
         {items && items.some((i) => i.kind === kind) && <BrowseBar b={b} kind={kind} />}
-        {items && b.view === 'list' && <ListView items={b.shown} kind={kind} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} empty="No hay nada con esa búsqueda." />}
-        {items && b.view !== 'list' && <Shelf packed={b.active} entries={buildEntries(items, decos, kind).filter((e) => !b.active || (e.type === 'item' && b.match(e.ref)))} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} />}
+        {items && b.view === 'list' && <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." />}
+        {items && b.view !== 'list' && <Shelf packed={b.active} entries={buildEntries(items, decos, kind).filter((e) => !b.active || (e.type === 'item' && b.match(e.ref)))} kind={kind} width={w} styleName={person.shelf_style} dust={dustInfo(person.last_visit).level} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} />}
       </>) : (
         <div className="pad" style={{ marginTop: 24 }}>
           <div className="card" style={{ textAlign: 'center', padding: 24 }}>
@@ -198,11 +196,17 @@ export function Notifications({ ctx }) {
           <Avatar p={p} s={42} /><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name || 'Alguien'}</b> se sumó con tu link<div className="light" style={{ marginTop: 4 }}>{r.rewarded ? `ganaste 30 tecoins · ${timeAgo(r.created_at)}` : 'cuando cargue su primer título ganás 30'}</div></div>
           {r.rewarded && <span className="row" style={{ gap: 4, fontWeight: 800 }}>+30 <Coin s={16} /></span>}
         </div>) })}
+      {(ctx.saveRewards || []).map((r) => { const p = ctx.people[r.saver_id]; return (
+        <div key={'s' + r.id} className="listrow" style={{ background: 'var(--liml)' }}>
+          <span onClick={() => p && ctx.go('friend', { person: p })} style={{ cursor: 'pointer' }}><Avatar p={p} s={42} /></span>
+          <div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name || 'Alguien'}</b> guardó <b style={{ fontWeight: 800 }}>{r.title}</b> de tu {KINDS[r.kind]?.teca || ''}teca<div className="light" style={{ marginTop: 4 }}>ganaste 2 tecoins · {timeAgo(r.created_at)}</div></div>
+          <span className="row" style={{ gap: 4, fontWeight: 800 }}>+2 <Coin s={16} /></span>
+        </div>) })}
       {recent.map((it) => { const p = ctx.people[it.user_id]; return (
         <button key={it.id} className="listrow" style={{ width: '100%', border: 0, borderBottom: '1px solid var(--line)', background: 'none', textAlign: 'left' }} onClick={() => ctx.openSheet({ t: 'detail', it })}>
-          <Avatar p={p} s={42} /><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name}</b> sumó <b style={{ fontWeight: 800 }}>{it.title}</b> a su {KINDS[it.kind].teca}teca<div className="light" style={{ marginTop: 4 }}>{timeAgo(it.created_at)}</div></div>
+          <span onClick={(e) => { if (!p) return; e.stopPropagation(); ctx.go('friend', { person: p }) }}><Avatar p={p} s={42} /></span><div style={{ flex: 1, fontWeight: 300, fontSize: 14 }}><b style={{ fontWeight: 800 }}>{p?.name}</b> sumó <b style={{ fontWeight: 800 }}>{it.title}</b> a su {KINDS[it.kind].teca}teca<div className="light" style={{ marginTop: 4 }}>{timeAgo(it.created_at)}</div></div>
         </button>) })}
-      {!ctx.incoming.length && !recent.length && !refs.length && <p className="pad body muted">No hay novedades por ahora.</p>}
+      {!ctx.incoming.length && !recent.length && !refs.length && !(ctx.saveRewards || []).length && <p className="pad body muted">No hay novedades por ahora.</p>}
     </div>
   )
 }

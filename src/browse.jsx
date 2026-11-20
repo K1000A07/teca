@@ -78,7 +78,7 @@ export function ListView({ items, kind, onOpen, empty }) {
         {[['recent', 'recientes'], ['stars', 'mejor puntaje'], ['az', 'a–z']].map(([k, l]) => <button key={k} className={`chip ${sort === k ? 'on' : ''}`} style={{ padding: '5px 11px', fontSize: 12.5 }} onClick={() => setSort(k)}>{l}</button>)}
       </div>
       {sorted.map((it) => (
-        <button key={it.id} onClick={() => onOpen(it)} className="row" style={{ width: '100%', gap: 12, padding: '10px 0', border: 0, borderBottom: '1px solid rgba(20,18,16,.1)', background: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}>
+        <button key={it.id} onClick={() => onOpen(it, sorted)} className="row" style={{ width: '100%', gap: 12, padding: '10px 0', border: 0, borderBottom: '1px solid rgba(20,18,16,.1)', background: 'transparent', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}>
           <Cover it={it} w={44} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: 15.5, letterSpacing: '-0.01em', lineHeight: 1.15, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{it.title}</div>

@@ -32,7 +32,7 @@ export default function App() {
   const [people, setPeople] = useState({})
   const [feed, setFeed] = useState([])
   const [saved, setSaved] = useState([])
-  const [stack, setStack] = useState(() => { const t = new URLSearchParams(location.search).get('tab'); return [{ s: ['friends', 'rank', 'me', 'clubs'].includes(t) ? t : 'lib' }] })
+  const [stack, setStack] = useState(() => { const t = new URLSearchParams(location.search).get('tab'); return t === 'news' ? [{ s: 'friends' }, { s: 'news' }] : [{ s: ['friends', 'rank', 'me', 'clubs'].includes(t) ? t : 'lib' }] })
   const [sheet, setSheet] = useState(null)
   const [toast, setToast] = useState('')
   const [teca, setTeca] = useState('book')
@@ -114,6 +114,7 @@ export default function App() {
     })()
   }, [profile?.id])
   const [refs, setRefs] = useState([])
+  const [saveRewards, setSaveRewards] = useState([])
   useEffect(() => {
     if (!profile?.id) return
     const ref = localStorage.getItem('teca.ref')
@@ -121,6 +122,7 @@ export default function App() {
       localStorage.removeItem('teca.ref')
       sb.rpc('claim_referral', { p_username: ref }).then(({ data }) => { if (data) { loadAll(); say('¡Ya son amigos! Cargá tu primer título y ganan tecoins los dos') } })
     }
+    sb.from('save_rewards').select('*').eq('owner_id', profile.id).order('created_at', { ascending: false }).limit(30).then(({ data }) => setSaveRewards(Array.isArray(data) ? data : []))
     sb.from('referrals').select('*').eq('inviter', profile.id).order('created_at', { ascending: false }).then(({ data }) => setRefs(Array.isArray(data) ? data : []))
   }, [profile?.id])
   const startTour = useCallback(() => { setStack([{ s: 'lib' }]); setTeca('book'); setTimeout(() => setTour(true), 300) }, [])
@@ -135,10 +137,10 @@ export default function App() {
   const friends = useMemo(() => friendships.filter((f) => f.status === 'accepted').map((f) => people[f.requester === uid ? f.addressee : f.requester]).filter(Boolean), [friendships, people, uid])
   const incoming = useMemo(() => friendships.filter((f) => f.status === 'pending' && f.addressee === uid), [friendships, uid])
   const lastSeen = Number(localStorage.getItem('teca.seen') || 0)
-  const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen)
+  const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen) || saveRewards.some((r) => new Date(r.created_at).getTime() > lastSeen)
 
   useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')
@@ -159,7 +161,7 @@ export default function App() {
       {screens[view.s] || screens.lib}
       {stack.length === 1 && !hideNav && <Nav tab={root} go={tab} onAdd={() => setSheet({ t: 'add' })} dots={{ friends: hasNews }} />}
       {sheet?.t === 'add' && <AddSheet ctx={ctx} prefill={sheet.prefill} onClose={() => setSheet(null)} />}
-      {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} onClose={() => setSheet(null)} />}
+      {sheet?.t === 'detail' && <Detail ctx={ctx} it={sheet.it} list={sheet.list} onClose={() => setSheet(null)} />}
       {sheet?.t === 'install' && <InstallSheet onClose={() => setSheet(null)} />}
       {sheet?.t === 'gift' && <GiftSheet coins={sheet.coins} from={sheet.from} onClose={() => setSheet(null)} />}
       {tour && !sheet && stack.length === 1 && <Tutorial news={tour === 'news'} onDone={endTour} />}

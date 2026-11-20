@@ -125,9 +125,9 @@ export function Home({ ctx }) {
       )}
       {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} />}
       <div style={{ height: 14 }} />
-      {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it) => ctx.openSheet({ t: 'detail', it })} empty="No hay nada con esa búsqueda." /> :
+      {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." /> :
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
-        onOpen={(it) => ctx.openSheet({ t: 'detail', it })} onSelect={(e) => setSel(sel === e ? null : e)}
+        onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} onSelect={(e) => setSel(sel === e ? null : e)}
         onLongPress={(e) => { setEditing(true); setSel(e) }} onMove={actions.move} onFull={ctx.say} packed={b.active} onAdd={editing ? null : () => ctx.openSheet({ t: 'add' })}
         onDecoTap={(d) => isPlant(d.kind) && water(d)} dust={dust.level} cleaning={cleaning} onCleaned={cleaned} /></div>}
       {!mine.length && !editing && (

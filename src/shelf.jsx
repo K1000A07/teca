@@ -164,7 +164,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, pac
       if (d.moved || d.long) return
       const en = entries.find((x) => x.eid === d.eid)
       if (editing) onSelect?.(d.eid)
-      else if (en?.type === 'item') onOpen?.(en.ref)
+      else if (en?.type === 'item') onOpen?.(en.ref, rows.flatMap((r) => [...r].sort((a, c) => a.left - c.left)).flatMap((b) => b.entries).filter((x) => x.type === 'item').map((x) => x.ref))
       else if (en?.type === 'deco') onDecoTap?.(en.ref)
     }
     window.addEventListener('pointermove', move, { passive: false }); window.addEventListener('pointerup', up); window.addEventListener('pointercancel', up)

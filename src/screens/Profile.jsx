@@ -188,7 +188,7 @@ export function Tecoins({ ctx }) {
         <TG ic="book" t="Libros"><TRow t="Libro corto" sub="Hasta 250 páginas" n={COINS.bookShort} /><TRow t="Libro largo" sub="Más de 250 páginas" n={COINS.bookLong} /><TRow t="En papel" sub="Si lo leíste en ebook, no suma extra" n={COINS.paper} plus /></TG>
         <TG ic="clap" t="Pelis"><TRow t="Estreno" sub="Salió hace menos de un año" n={COINS.movieNew} /><TRow t="De catálogo" sub="Salió hace más de un año" n={COINS.movieCatalog} /></TG>
         <TG ic="tv" t="Series"><TRow t="Serie corta" sub="De 1 a 3 temporadas" n={COINS.showShort} /><TRow t="Serie larga" sub="4 temporadas o más" n={COINS.showLong} /></TG>
-        <TG ic="plus" t="Extras"><TRow t="La viste en el cine" sub="Tiene que estar en cartelera" n={COINS.cinema} plus /><TRow t="Saga completa" sub="Todos los libros, pelis o temporadas" n={COINS.saga} plus /><TRow t="Dejaste una reseña" sub="Lo que opinás, para tus amigos" n={COINS.review} plus /><TRow t="Invitaste a un amigo" sub="Cuando carga su primer título" n={30} plus /></TG>
+        <TG ic="plus" t="Extras"><TRow t="La viste en el cine" sub="Tiene que estar en cartelera" n={COINS.cinema} plus /><TRow t="Saga completa" sub="Todos los libros, pelis o temporadas" n={COINS.saga} plus /><TRow t="Dejaste una reseña" sub="Lo que opinás, para tus amigos" n={COINS.review} plus /><TRow t="Invitaste a un amigo" sub="Cuando carga su primer título" n={30} plus /><TRow t="Alguien guardó algo tuyo" sub="Por recomendarlo, una vez por persona" n={2} plus /></TG>
         <div style={{ marginTop: 18 }}><button className="btn" onClick={() => ctx.go('shop')}>Canjear por decoraciones</button></div>
       </div>
     </div>
