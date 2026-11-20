@@ -22,7 +22,7 @@ export function useBrowse(items, kind) {
   return { q, setQ, genres, setGenres, minStars, setMinStars, view, setView, open, setOpen, match, active, present, reset, mine, shown: mine.filter(match) }
 }
 
-export function BrowseBar({ b, kind }) {
+export function BrowseBar({ b, kind, tour }) {
   const nFilters = b.genres.length + (b.minStars ? 1 : 0)
   const iconBtn = (on, label, onClick, children, badge) => (
     <button aria-label={label} aria-pressed={on} onClick={onClick}
@@ -33,7 +33,7 @@ export function BrowseBar({ b, kind }) {
   )
   return (
     <div style={{ padding: '16px 20px 0' }}>
-      <div className="row" style={{ gap: 8 }}>
+      <div className="row" data-tour={tour} style={{ gap: 8 }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <span style={{ position: 'absolute', left: 12, top: 13, opacity: .55 }}><Icon n="search" s={20} /></span>
           <input className="input" value={b.q} onChange={(e) => b.setQ(e.target.value)} placeholder={`Buscar en tus ${KINDS[kind].plural}`} aria-label="Buscar"

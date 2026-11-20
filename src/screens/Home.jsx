@@ -105,7 +105,6 @@ export function Home({ ctx }) {
       ) : <TopBar title={<Teca pre={`Mi ${KINDS[kind].teca}`} />} ctx={ctx} />}
       <div className="pad between" style={{ marginTop: 2 }}>
         <span className="light">{editing ? 'Arrastrá a donde quieras' : mine.length ? `${mine.length} ${mine.length === 1 ? KINDS[kind].label : KINDS[kind].plural}${avg ? ` · ★ ${avg}` : ''} · ${year}` : 'Todavía está vacía'}</span>
-        {!editing && (mine.length > 0 || ctx.decos.length > 0) && <button className="linkbtn" style={{ fontSize: 12.5 }} onClick={() => setEditing(true)}>Acomodar</button>}
       </div>
       <TecaTabs kind={kind} setKind={(k) => { setSel(null); setKind(k) }} />
       {askPush && !editing && (
@@ -123,7 +122,7 @@ export function Home({ ctx }) {
             : <button className="chip on" onClick={startClean}>limpiar · {dust.cost} <Coin s={14} ring="#E6F04A" /></button>}
         </div>
       )}
-      {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} />}
+      {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} tour="browse" />}
       <div style={{ height: !editing && mine.length > 0 ? 24 : 14 }} />
       {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." /> :
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}

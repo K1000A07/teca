@@ -8,7 +8,7 @@ import { AddSheet } from './screens/Add.jsx'
 import { Detail } from './screens/Detail.jsx'
 import { Friends, FriendTeca, Notifications } from './screens/Friends.jsx'
 import { Ranking } from './screens/Ranking.jsx'
-import { Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
+import { NEWS_KEY, Tutorial, InstallSheet, isStandalone } from './screens/Tutorial.jsx'
 import { AdminApp } from './screens/Admin.jsx'
 import { PushPrompt, shouldAskPush } from './screens/PushPrompt.jsx'
 import { Shop } from './screens/Arrange.jsx'
@@ -100,9 +100,10 @@ export default function App() {
     if (!profile || !uid) return
     // Cuentas de antes del tutorial nuevo: solo ven la novedad de acomodar
     if (!localStorage.getItem(`teca.tour2.${uid}`)) setTimeout(() => setTour(new Date(profile.created_at) < new Date('2026-11-19T15:00:00Z') ? 'news' : true), 400)
+    else if (!localStorage.getItem(`${NEWS_KEY}.${uid}`)) setTimeout(() => setTour('news'), 400)
     else if (shouldAskPush()) setTimeout(() => setAskPush(true), 900)
   }, [profile?.id, uid])
-  const endTour = useCallback(() => { const wasNews = tour === 'news'; localStorage.setItem(`teca.tour2.${uid}`, '1'); setTour(false); if (!isStandalone() && !wasNews) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid, tour])
+  const endTour = useCallback(() => { const wasNews = tour === 'news'; localStorage.setItem(`teca.tour2.${uid}`, '1'); localStorage.setItem(`${NEWS_KEY}.${uid}`, '1'); setTour(false); if (!isStandalone() && !wasNews) setSheet({ t: 'install' }); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid, tour])
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return
