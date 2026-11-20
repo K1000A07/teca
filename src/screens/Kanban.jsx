@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 
 // Tablero tipo Trello (solo admin): listas, tarjetas que se arrastran, etiquetas de colores y fechas.
-export const LISTS = [['ideas', 'Ideas', 'Sin fecha o para más adelante'], ['todo', 'Por hacer', 'Lo próximo'], ['doing', 'Haciendo', 'En curso'], ['done', 'Hecho', '']]
+export const LISTS = [['ideas', 'Ideas', 'Todavía no decidiste hacerlas'], ['todo', 'Por hacer', 'Ya decidiste: son las próximas'], ['doing', 'Haciendo', 'En curso'], ['done', 'Hecho', '']]
 export const TAGS = {
   'Administrativo': '#E6F04A',
   'Creativo': '#A9C6F2',
@@ -60,6 +60,7 @@ export function KanbanPanel({ say }) {
   const [adding, setAdding] = useState(null)
   const [title, setTitle] = useState('')
   const [drag, setDrag] = useState(null) // { id, x, y, ox, oy, w, over: {list, index} }
+  const [big, setBig] = useState(null)
   const colRefs = useRef({})
   useEffect(() => { sb.from('admin_tasks').select('*').order('position').order('created_at').then(({ data, error }) => setCards(error ? [] : data || [])) }, [])
 
@@ -80,7 +81,8 @@ export function KanbanPanel({ say }) {
   }
 
   // ----- arrastrar tarjetas entre listas -----
-  const inList = (list) => cards.filter((c) => c.list === list && (!filter || (c.tags || []).includes(filter))).sort((a, b) => a.position - b.position)
+  // Lo que se acerca sube solo al principio de su lista, ordenado por fecha
+  const inList = (list) => cards.filter((c) => c.list === list && (!filter || (c.tags || []).includes(filter))).sort((a, b) => (near(b) - near(a)) || (near(a) && near(b) ? a.due.localeCompare(b.due) : a.position - b.position))
   function overAt(x, y, id) {
     for (const [list] of LISTS) {
       const el = colRefs.current[list]; if (!el) continue
@@ -116,11 +118,10 @@ export function KanbanPanel({ say }) {
   }
 
   if (!cards) return <p className="body muted">Cargando…</p>
-  const soon = cards.filter(near).sort((a, b) => a.due.localeCompare(b.due))
   const dragging = drag && cards.find((c) => c.id === drag.id)
-  const CardView = ({ c, ghost }) => (
-    <div data-card={ghost ? undefined : c.id} onPointerDown={ghost ? undefined : (e) => down(e, c)}
-      style={{ background: near(c) ? '#F6F9C9' : '#fff', borderRadius: 14, padding: '10px 12px', boxShadow: ghost ? '0 16px 30px rgba(0,0,0,.25)' : '0 1px 0 rgba(20,18,16,.18)', cursor: ghost ? 'grabbing' : 'grab', touchAction: 'none', userSelect: 'none', opacity: !ghost && drag?.id === c.id ? .3 : 1, transform: ghost ? 'rotate(2deg)' : undefined }}>
+  const CardView = ({ c, ghost, still }) => (
+    <div data-card={ghost || still ? undefined : c.id} onPointerDown={ghost || still ? undefined : (e) => down(e, c)}
+      style={{ background: near(c) ? '#F6F9C9' : '#fff', borderRadius: 14, padding: '10px 12px', boxShadow: ghost ? '0 16px 30px rgba(0,0,0,.25)' : '0 1px 0 rgba(20,18,16,.18)', cursor: ghost ? 'grabbing' : still ? 'pointer' : 'grab', touchAction: still ? 'auto' : 'none', userSelect: 'none', opacity: !ghost && drag?.id === c.id ? .3 : 1, transform: ghost ? 'rotate(2deg)' : undefined }}>
       {(c.tags || []).length > 0 && <div className="row" style={{ gap: 4, flexWrap: 'wrap', marginBottom: 6 }}>{c.tags.map((t) => <Tag key={t} t={t} small />)}</div>}
       <div style={{ fontWeight: 800, fontSize: 14.5, letterSpacing: '-0.02em', lineHeight: 1.25, textDecoration: c.list === 'done' ? 'line-through' : 'none', opacity: c.list === 'done' ? .55 : 1 }}>{c.title}</div>
       {(c.due || c.body || c.cost || c.priority) && (
@@ -134,12 +135,6 @@ export function KanbanPanel({ say }) {
     </div>
   )
   return (<>
-    {soon.length > 0 && (
-      <div style={{ background: 'var(--ink)', color: '#fff', borderRadius: 20, padding: '14px 18px', marginBottom: 18, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
-        <span className="light" style={{ color: 'var(--lim)' }}>Se acerca</span>
-        {soon.map((c) => <button key={c.id} onClick={() => setOpen(c)} style={{ border: 0, background: 'none', color: '#fff', padding: 0, cursor: 'pointer', fontWeight: 800, fontSize: 15 }}>{c.title} <span style={{ fontWeight: 300 }}>· {when(c.due)}</span></button>)}
-      </div>
-    )}
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
       <span className="light" style={{ marginRight: 4 }}>Filtrar</span>
       <button className={`chip ${!filter ? 'on' : ''}`} style={{ fontSize: 12.5, padding: '5px 11px' }} onClick={() => setFilter(null)}>Todas</button>
@@ -152,8 +147,8 @@ export function KanbanPanel({ say }) {
         const shown = list.filter((c) => c.id !== drag?.id)
         return (
           <section key={k} ref={(el) => { colRefs.current[k] = el }} style={{ background: drag?.over?.list === k ? '#DCE7F8' : 'var(--cell)', borderRadius: 20, padding: 10, transition: 'background .15s' }}>
-            <div className="between" style={{ padding: '4px 6px 10px' }}><div><div style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em' }}>{l}</div>{s && <div style={{ fontWeight: 300, fontSize: 12 }}>{s}</div>}</div><span className="light">{list.length}</span></div>
-            <div style={{ display: 'grid', gap: 8, minHeight: 20 }}>
+            <button onClick={() => setBig(k)} title="Ver en grande" className="between" style={{ width: '100%', border: 0, background: 'none', padding: '4px 6px 10px', textAlign: 'left', color: 'inherit', cursor: 'pointer' }}><div><div style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em' }}>{l} <span style={{ fontWeight: 300, fontSize: 13 }}>↗</span></div>{s && <div style={{ fontWeight: 300, fontSize: 12 }}>{s}</div>}</div><span className="light">{list.length}</span></button>
+            <div style={{ display: 'grid', gap: 8, minHeight: 20, maxHeight: 640, overflowY: 'auto', overscrollBehavior: 'contain', margin: '0 -4px', padding: '0 4px 2px' }}>
               {shown.map((c, i) => (<div key={c.id}>{ov === i && <div style={{ height: 4, borderRadius: 2, background: 'var(--ink)', marginBottom: 8 }} />}<CardView c={c} /></div>))}
               {ov >= shown.length && <div style={{ height: 4, borderRadius: 2, background: 'var(--ink)' }} />}
               {adding === k
@@ -164,6 +159,19 @@ export function KanbanPanel({ say }) {
         )
       })}
     </div>
+    {big && (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(20,18,16,.45)', padding: 24 }} onClick={() => setBig(null)}>
+        <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--cell)', borderRadius: 28, height: '100%', overflow: 'auto', padding: '24px 28px', boxSizing: 'border-box' }}>
+          <div className="between" style={{ marginBottom: 18 }}>
+            <div><div style={{ fontWeight: 800, fontSize: 34, letterSpacing: '-0.045em' }}>{LISTS.find(([k]) => k === big)[1]} <span style={{ fontWeight: 300, fontSize: 20 }}>{inList(big).length}</span></div><div style={{ fontWeight: 300, fontSize: 14 }}>{LISTS.find(([k]) => k === big)[2]}</div></div>
+            <button className="iconbtn" aria-label="Cerrar" onClick={() => setBig(null)} style={{ width: 40, height: 40, fontSize: 20 }}>×</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10, alignItems: 'start' }}>
+            {inList(big).map((c) => <div key={c.id} onClick={() => setOpen(c)}><CardView c={c} ghost={false} still /></div>)}
+          </div>
+        </div>
+      </div>
+    )}
     {dragging && <div style={{ position: 'fixed', left: drag.x, top: drag.y, width: drag.w, zIndex: 90, pointerEvents: 'none' }}><CardView c={dragging} ghost /></div>}
     {open && <CardModal c={cards.find((x) => x.id === open.id) || open} onSave={save} onDelete={del} onClose={() => setOpen(null)} />}
   </>)
