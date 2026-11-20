@@ -89,7 +89,7 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
   )
 
   return (
-    <Sheet onClose={onClose}>
+    <Sheet onClose={onClose} headerOnly>
       <div className="seg">{KIND_ORDER.map((k) => <button key={k} className={k === kind ? 'on' : ''} onClick={() => { setKind(k); setPicked(false); setSugs([]) }}><Icon n={KINDS[k].icon} s={16} w={2} />{KINDS[k].label}</button>)}</div>
 
       <div className="row" style={{ alignItems: 'flex-start', gap: 14, marginTop: 16 }}>

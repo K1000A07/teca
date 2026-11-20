@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { KINDS, paletteFor, spineSize, PPC } from './lib.js'
 
 const P = {
@@ -154,11 +154,39 @@ export function Shelf({ items, kind, width, onOpen, onAdd }) {
   )
 }
 
-export function Sheet({ onClose, children, height }) {
+export function Sheet({ onClose, children, height, headerOnly }) {
   useEffect(() => { const f = (e) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f) }, [onClose])
+  // Deslizar para abajo cierra (desde arriba de todo de la tarjeta)
+  const ref = useRef(null)
+  const drag = useRef(null)
+  const [dy, setDy] = useState(0)
+  const [closing, setClosing] = useState(false)
+  const start = (e) => {
+    const t = e.touches[0]
+    const el = ref.current
+    const inHeader = t.clientY - el.getBoundingClientRect().top < 48
+    drag.current = { y: t.clientY, x: t.clientX, ok: inHeader || (!headerOnly && el.scrollTop <= 0), axis: null }
+  }
+  const move = (e) => {
+    const d = drag.current; if (!d || !d.ok) return
+    const t = e.touches[0], ddy = t.clientY - d.y, ddx = t.clientX - d.x
+    if (d.axis == null && Math.hypot(ddx, ddy) > 8) d.axis = Math.abs(ddy) > Math.abs(ddx) && ddy > 0 ? 'y' : 'x'
+    if (d.axis === 'y') { d.dy = Math.max(0, ddy); setDy(d.dy); if (e.cancelable) e.preventDefault() }
+  }
+  const end = () => {
+    const d = drag.current; drag.current = null
+    if (d?.axis === 'y' && (d.dy || 0) > 110) { setClosing(true); setTimeout(onClose, 180) }
+    else setDy(0)
+  }
+  useEffect(() => {
+    const el = ref.current; if (!el) return
+    el.addEventListener('touchmove', move, { passive: false })
+    return () => el.removeEventListener('touchmove', move)
+  })
+  const style = { ...(height ? { height, maxHeight: height } : {}), transform: closing ? 'translate(-50%, 100%)' : dy ? `translate(-50%, ${dy}px)` : undefined, transition: drag.current?.axis === 'y' ? 'none' : 'transform .2s ease' }
   return (<>
-    <div className="scrim" onClick={onClose} />
-    <div className="sheet" role="dialog" aria-modal="true" style={height ? { height, maxHeight: height } : undefined}>
+    <div className="scrim" onClick={onClose} style={{ opacity: closing ? 0 : 1 - Math.min(dy / 400, .6), transition: 'opacity .2s' }} />
+    <div ref={ref} className="sheet" role="dialog" aria-modal="true" style={style} onTouchStart={start} onTouchEnd={end} onTouchCancel={end}>
       <div style={{ position: 'relative', height: 30, marginBottom: 8 }}>
         <div className="grab" style={{ position: 'absolute', left: '50%', top: 0, transform: 'translateX(-50%)', margin: 0 }} />
         <button onClick={onClose} aria-label="Cerrar" className="iconbtn" style={{ position: 'absolute', right: -6, top: -2, width: 34, height: 34 }}><Icon n="x" s={16} w={2.2} /></button>
