@@ -243,6 +243,8 @@ export function BudgetPanel({ say }) {
   const inArs = usd ? totals.ARS.year + totals.USD.year * usd : null
   const td = { padding: '10px 8px', borderBottom: '1px solid rgba(20,18,16,.12)', verticalAlign: 'top', fontSize: 14 }
   return (<>
+    <ExpensesPanel say={say} />
+    <h2 style={{ ...h2, marginBottom: 12 }}>Lo que calculamos</h2>
     <div className="admin-grid" style={{ marginBottom: 22 }}>
       <div style={{ ...card('#E6F04A'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.ARS.year, 'ARS')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en pesos, primer año</div></div>
       <div style={{ ...card('#A9C6F2'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.USD.year, 'USD')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en dólares, primer año</div></div>
@@ -272,5 +274,95 @@ export function BudgetPanel({ say }) {
       </tbody>
     </table>
     <button className="chip" style={{ marginTop: 14 }} onClick={() => { const c = prompt('¿Qué gasto querés sumar?'); if (c) B.add({ concept: c, category: 'Otros', currency: 'ARS', freq: 'unico', position: 999 }, say) }}>+ Sumar un gasto</button>
+  </>)
+}
+
+// ---------- GASTOS (lo que ya pagaste) ----------
+export function ExpensesPanel({ say }) {
+  const E = useTable('admin_expenses', 'spent_on')
+  const [f, setF] = useState({ concept: '', amount: '', currency: 'ARS', spent_on: new Date().toISOString().slice(0, 10) })
+  if (!E.rows) return null
+  const rows = [...E.rows].sort((a, b) => (b.spent_on || '').localeCompare(a.spent_on || ''))
+  const tot = (c) => rows.filter((r) => r.currency === c).reduce((a, r) => a + num(r.amount), 0)
+  const money = (n, c) => (c === 'USD' ? `USD ${n.toLocaleString('es-AR')}` : `$${Math.round(n).toLocaleString('es-AR')}`)
+  async function add() {
+    if (!f.concept.trim() || !f.amount) return say('Completá qué pagaste y cuánto')
+    await E.add({ concept: f.concept.trim(), amount: +f.amount, currency: f.currency, spent_on: f.spent_on }, say)
+    setF({ ...f, concept: '', amount: '' })
+  }
+  const td = { padding: '9px 8px', borderBottom: '1px solid rgba(20,18,16,.12)', fontSize: 14 }
+  return (
+    <section style={{ ...box, marginBottom: 28, background: '#F6F9C9' }}>
+      <div className="between" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <div><h2 style={h2}>Lo que ya gastaste</h2><p style={sub}>Cada pago real, con su fecha.</p></div>
+        <div className="row" style={{ gap: 18 }}>
+          <div style={{ textAlign: 'right' }}><div style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.04em', lineHeight: 1 }}>{money(tot('ARS'), 'ARS')}</div><div className="light">en pesos</div></div>
+          <div style={{ textAlign: 'right' }}><div style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.04em', lineHeight: 1 }}>{money(tot('USD'), 'USD')}</div><div className="light">en dólares</div></div>
+        </div>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <td style={{ ...td, width: 110, fontWeight: 300 }}>{fmtD(r.spent_on)}</td>
+              <td style={{ ...td, fontWeight: 800 }}>{r.concept}{r.note && <div style={{ fontWeight: 300, fontSize: 12.5 }}>{r.note}</div>}</td>
+              <td style={{ ...td, textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap' }}>{money(num(r.amount), r.currency)}</td>
+              <td style={{ ...td, width: 60, textAlign: 'right' }}><button className="linkbtn" style={{ fontSize: 12, color: '#B33' }} onClick={() => confirm('¿Borrar este gasto?') && E.del(r)}>borrar</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row" style={{ gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <input className="input" type="date" value={f.spent_on} onChange={(e) => setF({ ...f, spent_on: e.target.value })} style={{ width: 'auto', padding: '9px 11px', fontSize: 14, background: '#fff' }} aria-label="Fecha" />
+        <input className="input" value={f.concept} onChange={(e) => setF({ ...f, concept: e.target.value })} placeholder="Qué pagaste" style={{ flex: 1, minWidth: 180, padding: '9px 11px', fontSize: 14, background: '#fff' }} />
+        <input className="input" type="number" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} placeholder="Monto" style={{ width: 120, padding: '9px 11px', fontSize: 14, background: '#fff' }} />
+        <select className="input" value={f.currency} onChange={(e) => setF({ ...f, currency: e.target.value })} style={{ width: 'auto', padding: '9px 8px', fontSize: 14, background: '#fff' }}><option>ARS</option><option>USD</option></select>
+        <button className="chip on" onClick={add}>Sumar gasto</button>
+      </div>
+    </section>
+  )
+}
+
+// ---------- DOCUMENTOS (números de trámite, comprobantes, datos) ----------
+export function DocsPanel({ say }) {
+  const D = useTable('admin_docs', 'doc_date')
+  const [adding, setAdding] = useState(false)
+  const [f, setF] = useState({ title: '', number: '', category: 'Marca', doc_date: new Date().toISOString().slice(0, 10), link: '', note: '' })
+  if (!D.rows) return <p className="body muted">Cargando…</p>
+  const cats = [...new Set(['Marca', 'Legales', 'Dominio y cuentas', 'Tiendas', ...D.rows.map((r) => r.category)])]
+  const add = async () => { if (!f.title.trim()) return; await D.add({ ...f, title: f.title.trim(), link: f.link || null, note: f.note || null, number: f.number || null }, say); setAdding(false); setF({ ...f, title: '', number: '', link: '', note: '' }) }
+  const copy = (t) => navigator.clipboard?.writeText(t).then(() => say('Copiado'))
+  return (<>
+    <div className="between" style={{ marginBottom: 16 }}><p style={{ ...sub, margin: 0, fontSize: 14 }}>Números de trámite, comprobantes, cuentas y fechas importantes. Todo en un solo lugar.</p><button className="chip on" onClick={() => setAdding(!adding)}>{adding ? 'Cancelar' : '+ Sumar documento'}</button></div>
+    {adding && (
+      <div style={{ ...box, marginBottom: 18, display: 'grid', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8 }}>
+          <Field label="Qué es"><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} style={{ padding: '9px 11px', fontSize: 14, background: '#fff' }} /></Field>
+          <Field label="Número"><input className="input" value={f.number} onChange={(e) => setF({ ...f, number: e.target.value })} style={{ padding: '9px 11px', fontSize: 14, background: '#fff' }} /></Field>
+          <Field label="Categoría"><input className="input" list="doccats" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} style={{ padding: '9px 11px', fontSize: 14, background: '#fff' }} /><datalist id="doccats">{cats.map((c) => <option key={c} value={c} />)}</datalist></Field>
+          <Field label="Fecha"><input className="input" type="date" value={f.doc_date} onChange={(e) => setF({ ...f, doc_date: e.target.value })} style={{ padding: '9px 11px', fontSize: 14, background: '#fff' }} /></Field>
+        </div>
+        <Field label="Link (comprobante, carpeta de Drive…)"><input className="input" value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} placeholder="https://…" style={{ padding: '9px 11px', fontSize: 14, background: '#fff' }} /></Field>
+        <Field label="Notas"><textarea className="input" rows={2} value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} style={{ padding: '9px 11px', fontSize: 14, background: '#fff', fontFamily: 'inherit', fontWeight: 300 }} /></Field>
+        <div><button className="chip on" onClick={add}>Guardar</button></div>
+      </div>
+    )}
+    <div style={{ display: 'grid', gap: 22 }}>
+      {cats.filter((c) => D.rows.some((r) => r.category === c)).map((c) => (
+        <section key={c}>
+          <h2 style={{ ...h2, fontSize: 19, marginBottom: 10 }}>{c}</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 10 }}>
+            {D.rows.filter((r) => r.category === c).sort((a, b) => (b.doc_date || '').localeCompare(a.doc_date || '')).map((r) => (
+              <div key={r.id} style={card()}>
+                <div className="between" style={{ alignItems: 'flex-start', gap: 8 }}><div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{r.title}</div><span className="light" style={{ whiteSpace: 'nowrap' }}>{fmtD(r.doc_date)}</span></div>
+                {r.number && <button onClick={() => copy(r.number)} title="Copiar" style={{ marginTop: 8, border: 0, background: 'var(--cell)', borderRadius: 10, padding: '7px 10px', fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 14, fontWeight: 700, cursor: 'pointer', color: 'inherit' }}>{r.number} ⧉</button>}
+                {r.note && <div style={{ fontWeight: 300, fontSize: 13, marginTop: 8, lineHeight: 1.4, whiteSpace: 'pre-wrap' }}>{r.note}</div>}
+                <div className="between" style={{ marginTop: 8 }}>{r.link ? <a href={r.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800 }}>Abrir ↗</a> : <span />}<button className="linkbtn" style={{ fontSize: 12, color: '#B33' }} onClick={() => confirm('¿Borrar este documento?') && D.del(r)}>borrar</button></div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   </>)
 }
