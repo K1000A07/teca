@@ -6,6 +6,7 @@ import { GiftsPanel } from './Profile.jsx'
 import { Review } from './Detail.jsx'
 import { BoardPanel } from './Board.jsx'
 import { BudgetPanel, ContentPanel, TasksPanel } from './Work.jsx'
+import { KanbanPanel } from './Kanban.jsx'
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 const DAY = 864e5
@@ -69,6 +70,7 @@ function UserRow({ u, open, onToggle }) {
 
 export function AdminApp({ session, profile, say }) {
   const [tab, setTab] = useState('resumen')
+  const [oldView, setOldView] = useState('tablero')
   const [users, setUsers] = useState(null)
   const [items, setItems] = useState(null)
   const [q, setQ] = useState('')
@@ -93,7 +95,13 @@ export function AdminApp({ session, profile, say }) {
   const week = Date.now() - 7 * DAY
   const filteredUsers = (users || []).filter((u) => !q || [u.name, u.username, u.email].some((x) => (x || '').toLowerCase().includes(q.toLowerCase())))
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
-  const T = [['resumen', 'Resumen'], ['tablero', 'Tablero'], ['tareas', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']]
+  // Dos mundos: la app (lo que pasa adentro de teca) y el tablero de trabajo (lo que hacés vos)
+  const GROUPS = {
+    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']],
+    work: [['kanban', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['viejo', 'Versión anterior']],
+  }
+  const group = GROUPS.work.some(([k]) => k === tab) ? 'work' : 'app'
+  const T = GROUPS[group]
   return (
     <div className="admin">
       <header className="between" style={{ flexWrap: 'wrap', gap: 16, padding: '28px 0 8px' }}>
@@ -104,9 +112,15 @@ export function AdminApp({ session, profile, say }) {
           <button className="linkbtn" style={{ fontWeight: 300 }} onClick={() => sb.auth.signOut()}>Salir</button>
         </div>
       </header>
-      <nav className="row" style={{ gap: 8, padding: '14px 0 26px', flexWrap: 'wrap' }}>{T.map(([k, l]) => <button key={k} className={`chip ${tab === k ? 'on' : ''}`} style={{ fontSize: 15, padding: '10px 18px' }} onClick={() => setTab(k)}>{l}</button>)}</nav>
+      <div className="row" style={{ gap: 0, marginTop: 14, background: 'var(--cell)', borderRadius: 99, padding: 4, width: 'fit-content' }}>
+        {[['app', 'La app', 'resumen'], ['work', 'Tablero de trabajo', 'kanban']].map(([g, l, first]) => <button key={g} onClick={() => group !== g && setTab(first)} style={{ border: 0, borderRadius: 99, padding: '11px 22px', fontWeight: 800, fontSize: 15.5, letterSpacing: '-0.02em', cursor: 'pointer', background: group === g ? 'var(--ink)' : 'transparent', color: group === g ? 'var(--lim)' : 'var(--ink)' }}>{l}</button>)}
+      </div>
+      <nav className="row" style={{ gap: 4, padding: '14px 0 22px', flexWrap: 'wrap', borderBottom: '1.5px solid rgba(20,18,16,.12)', marginBottom: 24 }}>{T.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ border: 0, background: 'none', padding: '8px 12px', fontWeight: tab === k ? 800 : 300, fontSize: 15, cursor: 'pointer', color: k === 'viejo' && tab !== k ? 'rgba(20,18,16,.5)' : 'var(--ink)', boxShadow: tab === k ? 'inset 0 -3px 0 var(--ink)' : 'none' }}>{l}</button>)}</nav>
 
-      {tab === 'tablero' ? <BoardPanel say={say} /> : tab === 'tareas' ? <TasksPanel say={say} /> : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      {tab === 'kanban' ? <KanbanPanel say={say} /> : tab === 'viejo' ? (<>
+        <div className="row" style={{ gap: 8, marginBottom: 18 }}><span style={{ fontWeight: 300, fontSize: 14 }}>La primera versión, por si querés volver:</span>{[['tablero', 'Tablero'], ['tareas', 'Tareas por prioridad']].map(([k, l]) => <button key={k} className={`chip ${oldView === k ? 'on' : ''}`} onClick={() => setOldView(k)}>{l}</button>)}</div>
+        {oldView === 'tablero' ? <BoardPanel say={say} /> : <TasksPanel say={say} />}
+      </>) : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />
