@@ -241,12 +241,15 @@ export function BudgetPanel({ say }) {
   const groups = [...new Set(B.rows.map((r) => r.category))]
   const money = (n, c) => (c === 'USD' ? `USD ${n.toLocaleString('es-AR')}` : `$${Math.round(n).toLocaleString('es-AR')}`)
   const inArs = usd ? totals.ARS.year + totals.USD.year * usd : null
+  const paid = (c) => (B.rows || []).filter((r) => r.paid && !r.optional && (r.currency === 'USD' ? 'USD' : 'ARS') === c).reduce((a, r) => a + (r.freq === 'mensual' ? num(r.amount) * 12 : num(r.amount)), 0)
+  const paidTxt = `Ya pagado: ${money(paid('ARS'), 'ARS')}${paid('USD') ? ` + ${money(paid('USD'), 'USD')}` : ''}. Falta: ${money(Math.max(0, totals.ARS.year - paid('ARS')), 'ARS')} + ${money(Math.max(0, totals.USD.year - paid('USD')), 'USD')}.`
   const td = { padding: '10px 8px', borderBottom: '1px solid rgba(20,18,16,.12)', verticalAlign: 'top', fontSize: 14 }
   return (<>
     <ExpensesPanel say={say} />
-    <h2 style={{ ...h2, marginBottom: 12 }}>Lo que calculamos</h2>
+    <h2 style={{ ...h2, marginBottom: 4 }}>Inversión estimada</h2>
+    <p style={{ ...sub, fontSize: 14, marginBottom: 14 }}>Lo que calculamos que va a salir el primer año, incluido lo que ya pagaste. {paidTxt}</p>
     <div className="admin-grid" style={{ marginBottom: 22 }}>
-      <div style={{ ...card('#E6F04A'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.ARS.year, 'ARS')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en pesos, primer año</div></div>
+      <div style={{ ...card('#E6F04A'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.ARS.year, 'ARS')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en pesos · primer año</div></div>
       <div style={{ ...card('#A9C6F2'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.USD.year, 'USD')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en dólares, primer año</div></div>
       <div style={{ ...card(), padding: '18px 20px' }}>
         <div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{inArs ? money(inArs, 'ARS') : '—'}</div>

@@ -420,5 +420,6 @@ update public.admin_budget set amount = 42043, paid = true, note = 'Pagado el 20
 update public.admin_budget set amount = 42043, paid = true, note = 'Pagado el 20/11/2026: 100 UMAPI a $420,43.' where concept like 'Marca en el INPI · clase 45%';
 update public.admin_budget set optional = true, note = 'No se presentó: en la 42 está "Tecas" (arquitectura, con algo de software). Se puede pedir más adelante con una descripción acotada.' where concept like 'Marca en el INPI · clase 42%';
 insert into public.admin_budget (category, concept, amount, currency, freq, optional, note, position)
-select 'Herramientas', 'Claude', 20, 'USD', 'mensual', false, 'Suscripción mensual.', 0
+select 'Herramientas', 'Claude', 20, 'USD', 'unico', false, 'Solo noviembre 2026 (después se usa la cuenta del trabajo).', 0
 where not exists (select 1 from public.admin_budget where concept = 'Claude');
+update public.admin_budget set paid = true, freq = 'unico' where concept = 'Claude';
