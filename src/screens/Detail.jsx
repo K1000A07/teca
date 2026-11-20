@@ -29,20 +29,34 @@ export function Detail({ ctx, it, list, onClose }) {
   const nav = items && idx >= 0 ? { idx, total: items.length, prev: idx > 0 ? () => go(-1) : null, next: idx < items.length - 1 ? () => go(1) : null } : null
   const touch = useRef(null)
   const [slide, setSlide] = useState(0)
-  const onTouchStart = (e) => { const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY, h: null } }
+  const [anim, setAnim] = useState(false)
+  const W = Math.min(window.innerWidth, 440)
+  const onTouchStart = (e) => { if (anim) return; const t = e.touches[0]; touch.current = { x: t.clientX, y: t.clientY, h: null } }
   const onTouchMove = (e) => {
     const s = touch.current; if (!s || !nav) return
     const t = e.touches[0], dx = t.clientX - s.x, dy = t.clientY - s.y
     if (s.h == null && Math.hypot(dx, dy) > 8) s.h = Math.abs(dx) > Math.abs(dy)
-    if (s.h) setSlide(Math.max(-90, Math.min(90, dx * .6)))
+    if (!s.h) return
+    const edge = (dx > 0 && !nav.prev) || (dx < 0 && !nav.next)
+    setSlide(edge ? dx * .25 : dx)
+  }
+  const swap = (d) => {
+    setAnim(true); setSlide(d > 0 ? -W : W)
+    setTimeout(() => {
+      d > 0 ? nav.next() : nav.prev()
+      setAnim(false); setSlide(d > 0 ? W * .6 : -W * .6)
+      requestAnimationFrame(() => requestAnimationFrame(() => { setAnim(true); setSlide(0); setTimeout(() => setAnim(false), 260) }))
+    }, 200)
   }
   const onTouchEnd = (e) => {
-    const s = touch.current; touch.current = null; setSlide(0)
-    if (!s?.h || !nav) return
+    const s = touch.current; touch.current = null
+    if (!s?.h || !nav) { setSlide(0); return }
     const dx = e.changedTouches[0].clientX - s.x
-    if (dx < -60 && nav.next) nav.next()
-    else if (dx > 60 && nav.prev) nav.prev()
+    if (dx < -70 && nav.next) swap(1)
+    else if (dx > 70 && nav.prev) swap(-1)
+    else { setAnim(true); setSlide(0); setTimeout(() => setAnim(false), 260) }
   }
+  const goArrow = (d) => (d > 0 ? nav?.next : nav?.prev) && !anim ? () => swap(d) : null
   if (editing) return <AddSheet ctx={ctx} edit={editing} onClose={() => { setEditing(null); onClose() }} />
   const arrow = (d, fn, label) => (
     <button aria-label={label} disabled={!fn} onClick={fn || undefined} style={{ width: 40, height: 32, border: 0, background: 'none', padding: 0, display: 'grid', placeItems: 'center', color: 'var(--ink)', opacity: fn ? 1 : .2, cursor: fn ? 'pointer' : 'default' }}><Chevron d={d} /></button>
@@ -51,12 +65,12 @@ export function Detail({ ctx, it, list, onClose }) {
     <Sheet onClose={onClose} height={nav ? '76dvh' : undefined}>
       {nav && (
         <div className="between" style={{ margin: '-4px -8px 10px' }}>
-          {arrow(-1, nav.prev, 'Anterior')}
+          {arrow(-1, goArrow(-1), 'Anterior')}
           <span className="light">{nav.idx + 1} de {nav.total}</span>
-          {arrow(1, nav.next, 'Siguiente')}
+          {arrow(1, goArrow(1), 'Siguiente')}
         </div>
       )}
-      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ minHeight: 'calc(100% - 90px)', transform: slide ? `translateX(${slide}px)` : undefined, transition: slide ? 'none' : 'transform .2s ease' }}>
+      <div onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} style={{ minHeight: 'calc(100% - 90px)', transform: slide ? `translateX(${slide}px) rotate(${slide / 60}deg)` : undefined, opacity: 1 - Math.min(Math.abs(slide) / W, 1) * .7, transition: anim ? 'transform .22s cubic-bezier(.2,.8,.2,1), opacity .22s' : 'none', willChange: 'transform' }}>
         <DetailBody key={cur.id} ctx={ctx} it={cur} onClose={onClose} onEdit={setEditing} />
       </div>
     </Sheet>
@@ -94,7 +108,7 @@ function DetailBody({ ctx, it, onClose, onEdit }) {
           <div style={{ marginTop: 8 }}><Review text={current.review} /></div>
         </div>
       )}
-      {!mine && !already && <div className="row" style={{ marginTop: 12, gap: 8 }}><button className="btn" onClick={() => { onClose(); setTimeout(() => ctx.openSheet({ t: 'add', prefill: current }), 50) }}>{current.kind === 'book' ? 'Ya lo leí' : 'Ya la vi'}</button><button className={`btn ${isSaved ? 'ink' : 'white'}`} onClick={toggleSave}>{isSaved ? 'Guardada' : 'Para después'}</button></div>}
+      {!mine && !already && <div className="row" style={{ marginTop: 12, gap: 8 }}><button className="btn" onClick={() => { onClose(); setTimeout(() => ctx.openSheet({ t: 'add', prefill: current }), 50) }}>{current.kind === 'book' ? 'Ya lo leí' : 'Ya la vi'}</button><button className={`btn ${isSaved ? 'ink' : 'white'}`} onClick={toggleSave} aria-label={isSaved ? 'Sacar de guardados' : 'Guardar para después'} aria-pressed={isSaved} style={{ flex: 'none', width: 56, padding: 0 }}><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" style={{ fill: isSaved ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinejoin: 'round' }}><path d="M7 4h10v16l-5-3.5L7 20z" /></svg></button></div>}
       {!mine && already && <p className="body muted" style={{ fontSize: 13, marginTop: 12 }}>✓ Ya está en tu {KINDS[current.kind].teca}teca.</p>}
       {others.length > 0 && (<>
         <div className="between" style={{ marginTop: 18 }}><span style={{ fontWeight: 800, fontSize: 17, letterSpacing: '-0.03em' }}>Lo que dijeron tus amigos</span></div>

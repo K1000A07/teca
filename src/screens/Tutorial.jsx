@@ -7,8 +7,9 @@ const STEPS = [
   { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. La tapa aparece sola. Ponele estrellas y, si querés, una reseña para tus amigos.', radius: 99 },
   { target: 'shelf', title: 'Acomodalo a tu gusto', text: 'Mantené apretado cualquier título para entrar al modo acomodar: arrastralo, ponelo parado, acostado o inclinado, y sumá decoraciones.', radius: 8 },
   { target: 'browse', title: 'Buscá, filtrá o mirala en lista', text: 'Arriba del estante tenés un buscador, un filtro por género y puntaje, y un botón para ver todo en lista. Cuando volvés a abrir teca, aparece de nuevo como biblioteca.', radius: 16 },
+  { target: null, demo: 'card', title: 'Deslizá entre títulos', text: 'Cuando abrís un libro o una peli, deslizá la tarjeta a los costados para pasar al anterior o al siguiente. Para cerrarla, deslizala para abajo.' },
   { target: 'coins', title: 'Ganá tecoins', text: 'Cada cosa que cargás suma tecoins, y si alguien guarda algo tuyo para después, ganás 2 más por recomendarlo. Canjealos por plantas, gatos, velas y más. Ojo: si no pasás seguido, tu teca junta polvo.', radius: 99 },
-  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario o mandales tu link: si se suman, ganan tecoins los dos. Tocá la foto de alguien para ver su teca, y deslizá a los costados para pasar de un título a otro.', radius: 99 },
+  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario o mandales tu link: si se suman, ganan tecoins los dos. Tocá la foto de alguien para ver su teca.', radius: 99 },
   { target: 'me', title: 'Tu teca principal', text: 'Cuando alguien entra a tu perfil, ve primero la teca donde más cargaste. Si preferís otra, la cambiás en Ajustes.', radius: 99 },
 ]
 
@@ -23,10 +24,32 @@ export const NEWS_KEY = 'teca.news3'
 const NEWS = [
   { target: 'shelf', isNew: true, title: 'Acomodá como quieras', text: 'Mantené apretado cualquier título para entrar al modo acomodar. Ahora cada cosa queda donde la soltás, y si soltás una deco sobre libros acostados, queda arriba.', radius: 8 },
   { target: 'browse', isNew: true, title: 'Buscador, filtro y lista', text: 'Buscá en tu teca, filtrá por género o puntaje, o mirala en lista. Cuando volvés a abrir teca, aparece de nuevo como biblioteca.', radius: 16 },
-  { target: null, isNew: true, title: 'Deslizá entre títulos', text: 'Cuando abrís un libro o una peli de una teca, deslizá a los costados para ver el anterior y el siguiente. Para cerrar, deslizá para abajo.' },
+  { target: null, demo: 'card', isNew: true, title: 'Deslizá entre títulos', text: 'Cuando abrís un libro o una peli, deslizá la tarjeta a los costados para pasar al anterior o al siguiente. Para cerrarla, deslizala para abajo.' },
   { target: 'coins', isNew: true, title: 'Ganá por recomendar', text: 'Si alguien guarda para después algo de tu teca, ganás 2 tecoins y te avisamos.', radius: 99 },
   { target: 'me', isNew: true, title: 'Tu teca principal', text: 'En tu perfil se ve primero la teca donde más cargaste. Si preferís otra, la cambiás en Ajustes.', radius: 99 },
 ]
+
+// Tarjeta de ejemplo que se desliza sola, para que se entienda el gesto
+function DemoCard() {
+  const hint = (anim, children) => <div style={{ position: 'absolute', left: 0, right: 0, top: 16, textAlign: 'center', animation: `${anim} 4.4s infinite`, fontWeight: 800, fontSize: 13, letterSpacing: '.06em', textTransform: 'uppercase' }}>{children}</div>
+  return (
+    <div className="demo-sheet" aria-hidden="true" style={{ position: 'fixed', left: '50%', marginLeft: 'max(-50vw, -220px)', width: 'min(100vw, 440px)', bottom: 0, height: '52dvh', background: '#fff', borderRadius: '28px 28px 0 0', overflow: 'hidden', boxShadow: '0 -10px 40px rgba(0,0,0,.25)' }}>
+      <div style={{ width: 40, height: 5, borderRadius: 3, background: '#D9D6CF', margin: '10px auto 0' }} />
+      {hint('demoHint', '← deslizá a los costados →')}
+      {hint('demoHint2', '↓ deslizá para cerrar')}
+      <div className="demo-card" style={{ padding: '46px 24px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 92, height: 136, borderRadius: 6, background: '#3C5DAA', transform: 'rotate(-3deg)', boxShadow: '0 10px 18px -8px rgba(0,0,0,.4)', padding: 10, boxSizing: 'border-box', color: '#E6F04A', fontWeight: 800, fontSize: 15, lineHeight: 1 }}>Un libro</div>
+        </div>
+        <div style={{ marginTop: 18, height: 26, width: '62%', borderRadius: 6, background: '#141210' }} />
+        <div className="between" style={{ marginTop: 10 }}><div style={{ height: 10, width: '34%', borderRadius: 5, background: '#D9D6CF' }} /><span style={{ color: '#F5B62A', letterSpacing: 2 }}>★★★★<span style={{ color: '#D9D6CF' }}>★</span></span></div>
+        <div style={{ marginTop: 16, height: 10, width: '92%', borderRadius: 5, background: '#ECEAE5' }} />
+        <div style={{ marginTop: 8, height: 10, width: '80%', borderRadius: 5, background: '#ECEAE5' }} />
+      </div>
+      <div className="demo-finger" style={{ position: 'absolute', left: 'calc(50% - 22px)', top: '46%', width: 44, height: 44, borderRadius: '50%', background: 'rgba(230,240,74,.85)', boxShadow: '0 0 0 2px #141210, 0 6px 14px rgba(0,0,0,.25)' }} />
+    </div>
+  )
+}
 
 export function Tutorial({ onDone, news }) {
   const LIST = news ? NEWS : STEPS
@@ -41,7 +64,7 @@ export function Tutorial({ onDone, news }) {
   const next = () => (i < LIST.length - 1 ? setI(i + 1) : onDone())
   const pad = 6
   const H = window.innerHeight
-  const tipStyle = !rect ? { top: '50%', transform: 'translateY(-50%)' }
+  const tipStyle = step.demo ? { top: 'max(24px, env(safe-area-inset-top))' } : !rect ? { top: '50%', transform: 'translateY(-50%)' }
     : H - rect.bottom > 250 ? { top: rect.bottom + 22 }
     : rect.top > 250 ? { bottom: H - rect.top + 22 }
     : { bottom: 24 }
@@ -50,6 +73,7 @@ export function Tutorial({ onDone, news }) {
       {rect
         ? <div style={{ position: 'fixed', left: rect.left - pad, top: rect.top - pad, width: rect.width + pad * 2, height: rect.height + pad * 2, borderRadius: step.radius, boxShadow: '0 0 0 4px #E6F04A, 0 0 0 9999px rgba(20,18,16,.74)', transition: 'all .35s cubic-bezier(.2,.8,.2,1)', pointerEvents: 'none' }} />
         : <div style={{ position: 'fixed', inset: 0, background: 'rgba(20,18,16,.74)' }} />}
+      {step.demo === 'card' && <DemoCard />}
       <div style={{ position: 'fixed', left: 'max(24px, calc(50% - 196px))', right: 'max(24px, calc(50% - 196px))', ...tipStyle, background: '#fff', borderRadius: 24, padding: 20, transition: 'all .35s' }}>
         <div className="between">{step.isNew ? <span className="row" style={{ gap: 8 }}><span className="tape" style={{ fontSize: 11, padding: '5px 9px' }}>NUEVO</span><span className="light">{i + 1} de {LIST.length}</span></span> : <span className="light">{i + 1} de {LIST.length}</span>}<button className="linkbtn" style={{ fontWeight: 300, fontSize: 13 }} onClick={onDone}>Saltar</button></div>
         <h2 className="h" style={{ fontSize: 24, marginTop: 10 }}>{step.title}</h2>

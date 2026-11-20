@@ -108,7 +108,7 @@ function Post({ ctx, it, isNew }) {
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginTop: 10 }}>
         {already ? <span className="chip" style={{ boxShadow: 'none', background: 'transparent', fontWeight: 300 }}>✓ en tu {KINDS[it.kind].teca}teca</span> : <>
           <button onClick={() => ctx.openSheet({ t: 'add', prefill: it })} className="chip lim"><Icon n="check" s={14} w={2.2} />{it.kind === 'book' ? 'ya lo leí' : 'ya la vi'}</button>
-          <button onClick={toggle} className={`chip ${saved ? 'on' : ''}`}><Icon n="bookmark" s={14} w={2} />{saved ? 'guardada' : 'para después'}</button>
+          <button onClick={toggle} className={`chip ${saved ? 'on' : ''}`} aria-label={saved ? 'Sacar de guardados' : 'Guardar para después'} aria-pressed={saved} style={{ padding: '7px 10px' }}><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" style={{ fill: saved ? 'currentColor' : 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinejoin: 'round' }}><path d="M7 4h10v16l-5-3.5L7 20z" /></svg></button>
         </>}
       </div>
       {isNew && <span style={{ position: 'absolute', right: 14, top: 12 }}><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#E6F04A" stroke="#141210" strokeWidth="1.5" /><path d="M12 5.8v12.4M6.6 8.9l10.8 6.2M6.6 15.1l10.8-6.2" stroke="#141210" strokeWidth="2" strokeLinecap="round" /></svg></span>}
