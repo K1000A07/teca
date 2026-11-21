@@ -119,16 +119,16 @@ const METRICS = [['views', 'Vistas'], ['likes', 'Me gusta'], ['comments', 'Comen
 const eng = (v) => { const m = v.metrics || {}; const vw = num(m.views); return vw ? (num(m.likes) + num(m.comments) + num(m.shares) + num(m.saves)) / vw : 0 }
 const pct = (x) => `${(x * 100).toFixed(1).replace('.', ',')}%`
 
-function VideoCard({ v, save, del }) {
-  const [open, setOpen] = useState(false)
+// Tarjeta chica: se toca y se abre en grande con todo el contenido
+function VideoCard({ v, save, onOpen }) {
   const i = STAGES.findIndex(([k]) => k === v.status)
   const move = (d) => { const n = STAGES[i + d]; if (n) save({ ...v, status: n[0], ...(n[0] === 'publicado' && !v.published_at ? { published_at: new Date().toISOString().slice(0, 10) } : {}) }) }
   const m = v.metrics || {}
-  const setM = (k, val) => save({ ...v, metrics: { ...m, [k]: val === '' ? null : +val } })
   return (
     <div style={card()}>
-      <button onClick={() => setOpen(!open)} style={{ width: '100%', textAlign: 'left', border: 0, background: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
+      <button onClick={onOpen} style={{ width: '100%', textAlign: 'left', border: 0, background: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
         <div style={{ fontWeight: 800, fontSize: 14.5, letterSpacing: '-0.02em', lineHeight: 1.2 }}>{v.title}</div>
+        {v.body && <div style={{ fontWeight: 300, fontSize: 12.5, lineHeight: 1.35, marginTop: 4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{v.body}</div>}
         <div className="row" style={{ gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
           {v.platform && <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 99, background: 'var(--cel)' }}>{v.platform}</span>}
           {(v.tags || '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => <span key={t} style={{ fontSize: 11.5, fontWeight: 300 }}>#{t}</span>)}
@@ -139,25 +139,46 @@ function VideoCard({ v, save, del }) {
         <button className="linkbtn" style={{ fontSize: 12.5, opacity: i > 0 ? 1 : .25 }} disabled={i === 0} onClick={() => move(-1)}>← {STAGES[i - 1]?.[1] || ''}</button>
         <button className="linkbtn" style={{ fontSize: 12.5, opacity: i < STAGES.length - 1 ? 1 : .25 }} disabled={i === STAGES.length - 1} onClick={() => move(1)}>{STAGES[i + 1]?.[1] || ''} →</button>
       </div>
-      {open && (
-        <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-          <Editable value={v.title} onSave={(x) => save({ ...v, title: x })} />
-          <Editable area value={v.body} onSave={(x) => save({ ...v, body: x })} placeholder="Idea, guion, notas" />
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={v.platform || ''} onChange={(e) => save({ ...v, platform: e.target.value || null })}><option value="">Plataforma</option>{PLATFORMS.map((p) => <option key={p}>{p}</option>)}</select>
-            <Editable value={v.tags} onSave={(x) => save({ ...v, tags: x || null })} placeholder="Etiquetas: pov, tour, humor" style={{ flex: 1, minWidth: 160 }} />
-          </div>
-          {v.status === 'publicado' && (<>
-            <Field label="Link"><Editable value={v.link} onSave={(x) => save({ ...v, link: x || null })} placeholder="https://…" /></Field>
-            <Field label="Publicado el"><input className="input" type="date" value={v.published_at || ''} onChange={(e) => save({ ...v, published_at: e.target.value || null })} style={{ padding: '9px 11px', fontSize: 14 }} /></Field>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
-              {METRICS.map(([k, l]) => <Field key={k} label={l}><input className="input" type="number" min={0} defaultValue={m[k] ?? ''} onBlur={(e) => setM(k, e.target.value)} style={{ padding: '8px 9px', fontSize: 14 }} /></Field>)}
-            </div>
-            {v.link && <a href={v.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800 }}>Abrir el video ↗</a>}
-          </>)}
-          <div className="between"><button className="linkbtn" style={{ fontSize: 13 }} onClick={() => setOpen(false)}>Listo</button><button className="linkbtn" style={{ fontSize: 13, color: '#B33' }} onClick={() => confirm('¿Borrar este video?') && del(v)}>Borrar</button></div>
+    </div>
+  )
+}
+
+// Vista grande de una idea (también para cargar una nueva)
+function VideoModal({ v, isNew, onSave, onDelete, onClose }) {
+  const [f, setF] = useState({ ...v })
+  const set = (patch) => setF((x) => ({ ...x, ...patch }))
+  const m = f.metrics || {}
+  const close = () => { onSave(f); onClose() }
+  useEffect(() => { const k = (e) => e.key === 'Escape' && close(); window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) })
+  const inp = { padding: '10px 12px', fontSize: 14 }
+  return (
+    <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(20,18,16,.45)', zIndex: 80, display: 'grid', placeItems: 'center', padding: 20 }}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{ background: '#fff', borderRadius: 24, width: 'min(620px, 100%)', maxHeight: '90dvh', overflow: 'auto', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+        <div className="between" style={{ alignItems: 'flex-start', gap: 12 }}>
+          <textarea autoFocus={isNew} value={f.title || ''} onChange={(e) => set({ title: e.target.value })} rows={2} placeholder="Idea de video" aria-label="Título" style={{ flex: 1, border: 0, outline: 0, resize: 'none', fontFamily: 'inherit', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', lineHeight: 1.15 }} />
+          <button className="iconbtn" aria-label="Cerrar" onClick={close} style={{ width: 34, height: 34, fontSize: 18 }}>×</button>
         </div>
-      )}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 14 }}>
+          <label style={{ display: 'grid', gap: 6 }}><span className="light">Etapa</span><select className="input" value={f.status} onChange={(e) => set({ status: e.target.value, ...(e.target.value === 'publicado' && !f.published_at ? { published_at: new Date().toISOString().slice(0, 10) } : {}) })} style={inp}>{STAGES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          <label style={{ display: 'grid', gap: 6 }}><span className="light">Plataforma</span><select className="input" value={f.platform || ''} onChange={(e) => set({ platform: e.target.value || null })} style={inp}><option value="">—</option>{PLATFORMS.map((p) => <option key={p}>{p}</option>)}</select></label>
+          <label style={{ display: 'grid', gap: 6, gridColumn: '1 / -1' }}><span className="light">Etiquetas</span><input className="input" value={f.tags || ''} onChange={(e) => set({ tags: e.target.value || null })} placeholder="pov, tour, humor" style={inp} /></label>
+        </div>
+        <label style={{ display: 'grid', gap: 6, marginTop: 12 }}><span className="light">Idea, guion, notas</span><textarea className="input" rows={9} value={f.body || ''} onChange={(e) => set({ body: e.target.value })} style={{ fontFamily: 'inherit', fontWeight: 300, fontSize: 15, lineHeight: 1.45, resize: 'vertical' }} /></label>
+        {f.status === 'publicado' && (<div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+            <label style={{ display: 'grid', gap: 6 }}><span className="light">Link</span><input className="input" value={f.link || ''} onChange={(e) => set({ link: e.target.value || null })} placeholder="https://…" style={inp} /></label>
+            <label style={{ display: 'grid', gap: 6 }}><span className="light">Publicado el</span><input className="input" type="date" value={f.published_at || ''} onChange={(e) => set({ published_at: e.target.value || null })} style={inp} /></label>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {METRICS.map(([k, l]) => <label key={k} style={{ display: 'grid', gap: 6 }}><span className="light">{l}</span><input className="input" type="number" min={0} value={m[k] ?? ''} onChange={(e) => set({ metrics: { ...m, [k]: e.target.value === '' ? null : +e.target.value } })} style={inp} /></label>)}
+          </div>
+          {f.link && <a href={f.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 800 }}>Abrir el video ↗</a>}
+        </div>)}
+        <div className="between" style={{ marginTop: 18 }}>
+          {isNew ? <button className="linkbtn" style={{ fontSize: 13 }} onClick={onClose}>Descartar</button> : <button className="linkbtn" style={{ color: '#B33', fontSize: 13 }} onClick={() => { if (confirm('¿Borrar esta idea?')) { onDelete(v); onClose() } }}>Borrar</button>}
+          <button className="chip on" style={{ padding: '10px 20px' }} onClick={close}>{isNew ? 'Agregar' : 'Listo'}</button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -196,11 +217,16 @@ function Report({ vids, say }) {
 
 export function ContentPanel({ say }) {
   const V = useTable('admin_content')
-  const [adding, setAdding] = useState(false)
-  const [title, setTitle] = useState('')
+  const [open, setOpen] = useState(null) // { v, isNew }
   if (!V.rows) return <p className="body muted">Cargando…</p>
-  const add = async () => { if (title.trim()) await V.add({ title: title.trim(), status: 'idea', position: 999 }, say); setTitle(''); setAdding(false) }
+  const saveModal = async (f) => {
+    if (open.isNew) { if (f.title?.trim()) await V.add({ ...f, title: f.title.trim(), position: 999 }, say) }
+    else V.save(f, say)
+  }
   return (<>
+    <div className="between" style={{ marginBottom: 14, gap: 12, flexWrap: 'wrap' }}>
+      <button className="chip on" style={{ padding: '10px 18px' }} onClick={() => setOpen({ v: { title: '', status: 'idea' }, isNew: true })}>+ Nueva idea</button>
+    </div>
     <Report vids={V.rows} say={say} />
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(210px, 1fr))', gap: 12, alignItems: 'start', overflowX: 'auto', paddingBottom: 8 }}>
       {STAGES.map(([k, l]) => {
@@ -209,15 +235,13 @@ export function ContentPanel({ say }) {
           <section key={k} style={{ ...box, padding: 12, background: k === 'publicado' ? '#EEF3D0' : 'var(--cell)' }}>
             <div className="between" style={{ marginBottom: 10 }}><h2 style={{ ...h2, fontSize: 18 }}>{l}</h2><span className="light">{list.length}</span></div>
             <div style={{ display: 'grid', gap: 8 }}>
-              {list.map((v) => <VideoCard key={v.id} v={v} save={(r) => V.save(r, say)} del={V.del} />)}
-              {k === 'idea' && (adding
-                ? <div style={{ display: 'grid', gap: 6 }}><input className="input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} placeholder="Idea de video" /><div className="row" style={{ gap: 8 }}><button className="chip on" onClick={add}>Agregar</button><button className="linkbtn" onClick={() => { setAdding(false); setTitle('') }}>Cancelar</button></div></div>
-                : <button className="chip" style={{ justifyContent: 'center', background: 'transparent' }} onClick={() => setAdding(true)}>+ Idea</button>)}
+              {list.map((v) => <VideoCard key={v.id} v={v} save={(r) => V.save(r, say)} onOpen={() => setOpen({ v })} />)}
             </div>
           </section>
         )
       })}
     </div>
+    {open && <VideoModal v={open.isNew ? open.v : V.rows.find((x) => x.id === open.v.id) || open.v} isNew={open.isNew} onSave={saveModal} onDelete={V.del} onClose={() => setOpen(null)} />}
   </>)
 }
 

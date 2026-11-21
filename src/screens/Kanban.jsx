@@ -20,7 +20,7 @@ const near = (c) => c.due && c.list !== 'done' && daysTo(c.due) <= (c.remind_day
 const when = (d) => { const n = daysTo(d); return n < 0 ? `hace ${-n} d` : n === 0 ? 'hoy' : n === 1 ? 'mañana' : n < 60 ? `en ${n} días` : new Date(d + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) }
 const Tag = ({ t, small }) => <span style={{ display: 'inline-block', fontSize: small ? 10 : 11, fontWeight: 800, letterSpacing: '.04em', padding: small ? '2px 7px' : '3px 9px', borderRadius: 99, background: TAGS[t] || '#ECEAE5', color: '#141210', whiteSpace: 'nowrap' }}>{t}</span>
 
-function CardModal({ c, onSave, onDelete, onClose }) {
+function CardModal({ c, isNew, onSave, onDelete, onClose }) {
   const [f, setF] = useState({ ...c, tags: c.tags || [] })
   const set = (patch) => setF((x) => ({ ...x, ...patch }))
   const close = () => { onSave(f); onClose() }
@@ -29,7 +29,7 @@ function CardModal({ c, onSave, onDelete, onClose }) {
     <div onClick={close} style={{ position: 'fixed', inset: 0, background: 'rgba(20,18,16,.45)', zIndex: 80, display: 'grid', placeItems: 'center', padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" style={{ background: '#fff', borderRadius: 24, width: 'min(560px, 100%)', maxHeight: '90dvh', overflow: 'auto', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
         <div className="between" style={{ alignItems: 'flex-start', gap: 12 }}>
-          <textarea value={f.title} onChange={(e) => set({ title: e.target.value })} rows={2} aria-label="Título" style={{ flex: 1, border: 0, outline: 0, resize: 'none', fontFamily: 'inherit', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', lineHeight: 1.15 }} />
+          <textarea autoFocus={isNew} value={f.title} onChange={(e) => set({ title: e.target.value })} rows={2} placeholder="Título de la tarjeta" aria-label="Título" style={{ flex: 1, border: 0, outline: 0, resize: 'none', fontFamily: 'inherit', fontWeight: 800, fontSize: 22, letterSpacing: '-0.03em', lineHeight: 1.15 }} />
           <button className="iconbtn" aria-label="Cerrar" onClick={close} style={{ width: 34, height: 34, fontSize: 18 }}>×</button>
         </div>
         <div className="light" style={{ marginTop: 14 }}>Etiquetas</div>
@@ -45,8 +45,8 @@ function CardModal({ c, onSave, onDelete, onClose }) {
         </div>
         <label style={{ display: 'grid', gap: 6, marginTop: 12 }}><span className="light">Notas</span><textarea className="input" rows={6} value={f.body || ''} onChange={(e) => set({ body: e.target.value })} style={{ fontFamily: 'inherit', fontWeight: 300, fontSize: 15, lineHeight: 1.45, resize: 'vertical' }} /></label>
         <div className="between" style={{ marginTop: 18 }}>
-          <button className="linkbtn" style={{ color: '#B33', fontSize: 13 }} onClick={() => { if (confirm('¿Borrar esta tarjeta?')) { onDelete(c); onClose() } }}>Borrar tarjeta</button>
-          <button className="chip on" style={{ padding: '10px 20px' }} onClick={close}>Listo</button>
+          {isNew ? <button className="linkbtn" style={{ fontSize: 13 }} onClick={onClose}>Descartar</button> : <button className="linkbtn" style={{ color: '#B33', fontSize: 13 }} onClick={() => { if (confirm('¿Borrar esta tarjeta?')) { onDelete(c); onClose() } }}>Borrar tarjeta</button>}
+          <button className="chip on" style={{ padding: '10px 20px' }} onClick={close}>{isNew ? 'Agregar' : 'Listo'}</button>
         </div>
       </div>
     </div>
@@ -61,6 +61,7 @@ export function KanbanPanel({ say }) {
   const [title, setTitle] = useState('')
   const [drag, setDrag] = useState(null) // { id, x, y, ox, oy, w, over: {list, index} }
   const [big, setBig] = useState(null)
+  const [newCard, setNewCard] = useState(null)
   const colRefs = useRef({})
   useEffect(() => { sb.from('admin_tasks').select('*').order('position').order('created_at').then(({ data, error }) => setCards(error ? [] : data || [])) }, [])
 
@@ -71,6 +72,14 @@ export function KanbanPanel({ say }) {
     if (error) say('No se pudo guardar')
   }
   async function del(c) { setCards((xs) => xs.filter((x) => x.id !== c.id)); await sb.from('admin_tasks').delete().eq('id', c.id) }
+  async function addFull(f) {
+    const t = (f.title || '').trim()
+    if (!t) return
+    const pos = Math.max(0, ...cards.filter((c) => c.list === f.list).map((c) => c.position)) + 1
+    const { data, error } = await sb.from('admin_tasks').insert({ ...f, title: t, position: pos, area: f.area || 'admin' }).select().single()
+    if (error) return say('No se pudo guardar')
+    setCards((xs) => [...xs, data])
+  }
   async function add(list) {
     const t = title.trim(); setTitle(''); setAdding(null)
     if (!t) return
@@ -135,6 +144,7 @@ export function KanbanPanel({ say }) {
     </div>
   )
   return (<>
+    <button className="chip on" style={{ padding: '10px 18px', marginBottom: 14 }} onClick={() => setNewCard({ title: '', list: 'todo', tags: filter ? [filter] : [], priority: 'ahora', remind_days: 30 })}>+ Nueva tarjeta</button>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
       <span className="light" style={{ marginRight: 4 }}>Filtrar</span>
       <button className={`chip ${!filter ? 'on' : ''}`} style={{ fontSize: 12.5, padding: '5px 11px' }} onClick={() => setFilter(null)}>Todas</button>
@@ -173,6 +183,7 @@ export function KanbanPanel({ say }) {
       </div>
     )}
     {dragging && <div style={{ position: 'fixed', left: drag.x, top: drag.y, width: drag.w, zIndex: 90, pointerEvents: 'none' }}><CardView c={dragging} ghost /></div>}
+    {newCard && <CardModal c={newCard} isNew onSave={addFull} onDelete={() => {}} onClose={() => setNewCard(null)} />}
     {open && <CardModal c={cards.find((x) => x.id === open.id) || open} onSave={save} onDelete={del} onClose={() => setOpen(null)} />}
   </>)
 }
