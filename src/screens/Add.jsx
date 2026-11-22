@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
+import { useImpression } from '../track.js'
 import { Coin, Cover, Icon, Sheet, Stars } from '../ui.jsx'
 import { GENRES, KINDS, KIND_ORDER, PLATFORMS, coinsFor, genreList, searchTitles } from '../lib.js'
 
@@ -45,6 +46,7 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
   const [busy, setBusy] = useState(false)
   const [searching, setSearching] = useState(false)
   const [done, setDone] = useState(null)
+  useImpression('sumaste', ctx.uid, !!done)
   const set = (k, v) => setF((x) => ({ ...x, [k]: v }))
 
   useEffect(() => {

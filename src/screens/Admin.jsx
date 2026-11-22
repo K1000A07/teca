@@ -7,6 +7,7 @@ import { Review } from './Detail.jsx'
 import { BoardPanel } from './Board.jsx'
 import { BudgetPanel, ContentPanel, DocsPanel, TasksPanel } from './Work.jsx'
 import { KanbanPanel } from './Kanban.jsx'
+import { ImpressionsPanel } from './Impressions.jsx'
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 const DAY = 864e5
@@ -97,7 +98,7 @@ export function AdminApp({ session, profile, say }) {
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
   // Dos mundos: la app (lo que pasa adentro de teca) y el tablero de trabajo (lo que hacés vos)
   const GROUPS = {
-    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']],
+    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['impresiones', 'Impresiones'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']],
     work: [['kanban', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['docs', 'Documentos'], ['viejo', 'Versión anterior']],
   }
   const group = GROUPS.work.some(([k]) => k === tab) ? 'work' : 'app'
@@ -120,7 +121,7 @@ export function AdminApp({ session, profile, say }) {
       {tab === 'kanban' ? <KanbanPanel say={say} /> : tab === 'viejo' ? (<>
         <div className="row" style={{ gap: 8, marginBottom: 18 }}><span style={{ fontWeight: 300, fontSize: 14 }}>La primera versión, por si querés volver:</span>{[['tablero', 'Tablero'], ['tareas', 'Tareas por prioridad']].map(([k, l]) => <button key={k} className={`chip ${oldView === k ? 'on' : ''}`} onClick={() => setOldView(k)}>{l}</button>)}</div>
         {oldView === 'tablero' ? <BoardPanel say={say} /> : <TasksPanel say={say} />}
-      </>) : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      </>) : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'impresiones' ? <ImpressionsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />

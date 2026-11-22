@@ -7,6 +7,7 @@ import { KINDS, timeAgo, dustInfo } from '../lib.js'
 import { TopBar, TecaTabs, useSwipe } from './Home.jsx'
 import { Review } from './Detail.jsx'
 import { toggleSave } from '../save.js'
+import { useImpression } from '../track.js'
 
 function AddFriend({ ctx, onClose }) {
   const [q, setQ] = useState('')
@@ -46,6 +47,7 @@ function AddFriend({ ctx, onClose }) {
 }
 
 export function Friends({ ctx }) {
+  useImpression('conecta', ctx.uid)
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState('all')
   const week = Date.now() - 7 * 864e5

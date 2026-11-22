@@ -3,6 +3,7 @@ import { sb } from '../supabase.js'
 import { Avatar, Back, Coin, CoinPill, Cover, Icon, Sheet } from '../ui.jsx'
 import { COINS, KINDS } from '../lib.js'
 import { ProfileForm } from './Auth.jsx'
+import { useImpression } from '../track.js'
 import { InstallContent, isStandalone } from './Tutorial.jsx'
 import { pushStatus, enablePush, disablePush } from '../push.js'
 
@@ -179,6 +180,7 @@ function TRow({ t, sub, n, plus }) {
 const TG = ({ ic, t, children }) => <div style={{ marginTop: 14 }}><div className="row" style={{ gap: 7 }}><Icon n={ic} s={16} w={2} /><span className="light" style={{ color: 'var(--ink)', letterSpacing: '.2em' }}>{t}</span></div><div style={{ marginTop: 2 }}>{children}</div></div>
 
 export function Tecoins({ ctx }) {
+  useImpression('tecoins', ctx.uid)
   return (
     <div>
       <Back onBack={ctx.back} title="Tecoins" right={<CoinPill n={ctx.coins} />} />

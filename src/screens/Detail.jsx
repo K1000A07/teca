@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { toggleSave as saveIt } from '../save.js'
 import { sb } from '../supabase.js'
+import { track } from '../track.js'
 import { Avatar, Cover, Sheet, Stars } from '../ui.jsx'
 import { KINDS, fmtDate, genreLabels } from '../lib.js'
 import { AddSheet } from './Add.jsx'
@@ -23,6 +24,7 @@ const Chevron = ({ d }) => <svg aria-hidden="true" width="22" height="22" viewBo
 export function Detail({ ctx, it, list, onClose }) {
   const [cur, setCur] = useState(it)
   const [editing, setEditing] = useState(null)
+  useEffect(() => { track('detalle', ctx.uid) }, [cur.id, ctx.uid])
   const items = Array.isArray(list) && list.length > 1 ? list : null
   const idx = items ? items.findIndex((x) => x.id === cur.id) : -1
   const go = (d) => { if (!items) return; const n = items[idx + d]; if (n) setCur(n) }
