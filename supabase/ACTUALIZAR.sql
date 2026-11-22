@@ -452,18 +452,19 @@ create policy "admin ve impresiones" on public.ad_impressions for select to auth
 grant insert, select on public.ad_impressions to authenticated;
 
 -- Reporte para el panel: por pantalla, impresiones y personas distintas en los últimos N días.
--- No cuenta a las cuentas de administración. La fila '_activos' = personas con al menos una impresión.
-create or replace function public.admin_ad_report(p_days int default 28)
+-- Por defecto no cuenta a las cuentas de administración (p_admin = true las incluye, para probar). La fila '_activos' = personas con al menos una impresión.
+drop function if exists public.admin_ad_report(int);
+create or replace function public.admin_ad_report(p_days int default 28, p_admin boolean default false)
 returns table (space text, impressions bigint, people bigint)
 language sql stable security definer set search_path = public as $$
   with base as (
     select i.space, i.user_id from ad_impressions i
     join profiles p on p.id = i.user_id
-    where public.is_admin() and not coalesce(p.is_admin, false)
+    where public.is_admin() and (p_admin or not coalesce(p.is_admin, false))
       and i.created_at >= now() - make_interval(days => greatest(p_days, 1))
   )
   select space, count(*), count(distinct user_id) from base group by space
   union all
   select '_activos', count(*), count(distinct user_id) from base;
 $$;
-grant execute on function public.admin_ad_report(int) to authenticated;
+grant execute on function public.admin_ad_report(int, boolean) to authenticated;

@@ -18,13 +18,14 @@ export function ImpressionsPanel({ say }) {
   const [rows, setRows] = useState(null)
   const [err, setErr] = useState('')
   const [users, setUsers] = useState(5000)
+  const [withAdmin, setWithAdmin] = useState(false)
   useEffect(() => {
     setRows(null); setErr('')
-    sb.rpc('admin_ad_report', { p_days: days }).then(({ data, error }) => {
+    sb.rpc('admin_ad_report', { p_days: days, p_admin: withAdmin }).then(({ data, error }) => {
       if (error) { setErr(error.message); setRows([]); return }
       setRows(Array.isArray(data) ? data : [])
     })
-  }, [days])
+  }, [days, withAdmin])
 
   const by = Object.fromEntries((rows || []).map((r) => [r.space, r]))
   const active = Number(by._activos?.people || 0)
@@ -42,9 +43,10 @@ export function ImpressionsPanel({ say }) {
 
   return (
     <div>
-      <p className="body" style={{ maxWidth: 640 }}>Cuántas veces se ve cada pantalla donde va a ir publicidad. No incluye a las cuentas de administración. Sirve para saber qué números mostrarle a una marca.</p>
+      <p className="body" style={{ maxWidth: 640 }}>Cuántas veces se ve cada pantalla donde va a ir publicidad. Por defecto no incluye a las cuentas de administración. Sirve para saber qué números mostrarle a una marca.</p>
       <div className="row" style={{ gap: 6, margin: '16px 0 14px', flexWrap: 'wrap' }}>
         {PERIODS.map(([d, l]) => <button key={d} className={`chip ${days === d ? 'on' : ''}`} onClick={() => setDays(d)}>{l}</button>)}
+        <button className={`chip ${withAdmin ? 'on' : ''}`} onClick={() => setWithAdmin(!withAdmin)}>Incluir mi cuenta (para probar)</button>
         <span className="muted" style={{ marginLeft: 10, fontSize: 14 }}>Proyectar con</span>
         <input className="input" style={{ width: 110 }} type="number" min="0" value={users} onChange={(e) => setUsers(e.target.value)} />
         <span className="muted" style={{ fontSize: 14 }}>usuarios activos</span>
