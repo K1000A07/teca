@@ -2,15 +2,11 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { Icon, Sheet } from '../ui.jsx'
 
 const STEPS = [
-  { target: null, title: <>Esta es tu <span className="serif" style={{ fontWeight: 400, fontSize: '1.12em' }}>teca</span></>, text: 'Una biblioteca de verdad, pero en el bolsillo. Cada libro, peli o serie que terminás aparece en tu estante, y tus amigos ven en qué andás.' },
-  { target: 'tabs', title: 'Tres estantes, uno para cada cosa', text: <>Tu biblio<span className="serif">teca</span> para libros, tu filmo<span className="serif">teca</span> para pelis y tu video<span className="serif">teca</span> para series. Deslizá para pasar de una a otra.</>, radius: 99 },
-  { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. La tapa aparece sola. Ponele estrellas y, si querés, una reseña para tus amigos.', radius: 99 },
-  { target: 'shelf', title: 'Acomodalo a tu gusto', text: 'Mantené apretado cualquier título para entrar al modo acomodar: arrastralo, ponelo parado, acostado o inclinado, y sumá decoraciones.', radius: 8 },
-  { target: 'browse', title: 'Buscá, filtrá o mirala en lista', text: 'Arriba del estante tenés un buscador, un filtro por género y puntaje, y un botón para ver todo en lista. Cuando volvés a abrir teca, aparece de nuevo como biblioteca.', radius: 16 },
-  { target: null, demo: 'card', title: 'Deslizá entre títulos', text: 'Cuando abrís un libro o una peli, deslizá la tarjeta a los costados para pasar al anterior o al siguiente. Para cerrarla, deslizala para abajo.' },
-  { target: 'coins', title: 'Ganá tecoins', text: 'Cada cosa que cargás suma tecoins, y si alguien guarda algo tuyo para después, ganás 2 más por recomendarlo. Canjealos por plantas, gatos, velas y más. Ojo: si no pasás seguido, tu teca junta polvo.', radius: 99 },
-  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por su usuario o mandales tu link: si se suman, ganan tecoins los dos. Tocá la foto de alguien para ver su teca.', radius: 99 },
-  { target: 'me', title: 'Tu teca principal', text: 'Cuando alguien entra a tu perfil, ve primero la teca donde más cargaste. Si preferís otra, la cambiás en Ajustes.', radius: 99 },
+  { target: 'tabs', title: 'Tres estantes en uno', text: <>Libros en tu biblio<span className="serif">teca</span>, pelis en tu filmo<span className="serif">teca</span> y series en tu video<span className="serif">teca</span>. Deslizá para cambiar.</>, radius: 8 },
+  { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. Sumale estrellas y, si querés, una reseña.', radius: 99 },
+  { target: 'shelf', title: 'Acomodá tu estante', text: 'Dejá el dedo apretado un segundo sobre un título y arrastralo adonde quieras. Ahí también ponés tus decoraciones.', radius: 8 },
+  { target: 'coins', title: 'Ganá tecoins y decorá', text: 'Cada título que cargás suma tecoins. Canjealos por plantas, gatos y velas para tu estante.', radius: 99 },
+  { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por usuario o mandales tu link: si se suman, ganan tecoins los dos.', radius: 99 },
 ]
 
 export const isStandalone = () => window.matchMedia?.('(display-mode: standalone)').matches || window.navigator.standalone === true
@@ -22,7 +18,7 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); defe
 // Novedades para quienes ya hicieron el tutorial (se muestran una sola vez)
 export const NEWS_KEY = 'teca.news3'
 const NEWS = [
-  { target: 'shelf', isNew: true, title: 'Acomodá como quieras', text: 'Mantené apretado cualquier título para entrar al modo acomodar. Ahora cada cosa queda donde la soltás, y si soltás una deco sobre libros acostados, queda arriba.', radius: 8 },
+  { target: 'shelf', isNew: true, title: 'Acomodá como quieras', text: 'Dejá el dedo apretado un segundo sobre cualquier título para acomodar. Cada cosa queda donde la soltás, y si soltás una deco sobre libros acostados, queda arriba.', radius: 8 },
   { target: 'browse', isNew: true, title: 'Buscador, filtro y lista', text: 'Buscá en tu teca, filtrá por género o puntaje, o mirala en lista. Cuando volvés a abrir teca, aparece de nuevo como biblioteca.', radius: 16 },
   { target: null, demo: 'card', isNew: true, title: 'Deslizá entre títulos', text: 'Cuando abrís un libro o una peli, deslizá la tarjeta a los costados para pasar al anterior o al siguiente. Para cerrarla, deslizala para abajo.' },
   { target: 'coins', isNew: true, title: 'Ganá por recomendar', text: 'Si alguien guarda para después algo de tu teca, ganás 2 tecoins y te avisamos.', radius: 99 },
