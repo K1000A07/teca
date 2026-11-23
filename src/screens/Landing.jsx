@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import celu from '../landing/celu.html?raw'
 import compu from '../landing/compu.html?raw'
 
-const W = { celu: 470, compu: 1800 }
+const W = { celu: 490, compu: 1900 }
 const words = ['biblio', 'filmo', 'video']
 const toasts = [['Sofi guardó Harry Potter en tu biblioteca', '+2 tecoins', 0, 0], ['Juli ya vio Interestelar', '', 1, 1], ['Mica terminó The Bear, temporada 3', 'En tu videoteca · +20 tecoins', 0, 0]]
 
