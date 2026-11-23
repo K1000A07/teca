@@ -20,13 +20,16 @@ import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs
 let fromLink = false
 try {
   const rm = location.pathname.match(/^\/r\/([a-z0-9_.]+)/i)
-  if (rm) { fromLink = true; localStorage.setItem('teca.ref', rm[1].toLowerCase()); history.replaceState({}, '', '/') }
+  if (rm) { fromLink = true; localStorage.setItem('teca.ref', rm[1].toLowerCase()); history.replaceState({}, '', '/app') }
   const m = location.pathname.match(/^\/regalo\/([a-z0-9-]+)/i)
   const g = m ? m[1] : new URLSearchParams(location.search).get('regalo')
-  if (g) { fromLink = true; localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/') }
+  if (g) { fromLink = true; localStorage.setItem('teca.gift', g.toLowerCase()); history.replaceState({}, '', '/app') }
 } catch {}
-// La landing la ven solo quienes llegan sin sesión desde el navegador (no la app instalada ni los links de regalo/invitación)
-const landingOK = !isStandalone() && !fromLink && location.pathname === '/' && !new URLSearchParams(location.search).has('entrar')
+// La landing es lo que se ve siempre en appteca.com.ar (/) desde el navegador. La app vive en /app y el panel en /admin.
+// No se muestra en la app instalada, en los links de regalo/invitación ni al volver de un mail de confirmación.
+const fromMail = /access_token|type=(signup|recovery|magiclink|invite)|error_description/.test(location.hash) || new URLSearchParams(location.search).has('code')
+const landingOK = !isStandalone() && !fromLink && !fromMail && location.pathname === '/' && !new URLSearchParams(location.search).has('entrar')
+const enterMode = new URLSearchParams(location.search).get('m')
 
 export default function App() {
   const [entered, setEntered] = useState(null)
@@ -152,12 +155,12 @@ export default function App() {
   useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, arrange, arrangeReq, clearArrange, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
-  if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
+  if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')
   if (isAdminPage && session !== undefined && !(session && profile === undefined)) return session ? <><AdminApp session={session} profile={profile} say={say} /><Toast msg={toast} /></> : <div className="app"><Login say={say} /><Toast msg={toast} /></div>
-  if (landingOK && !entered && session === null) return <Landing onEnter={(m) => { setEntered(m); window.scrollTo(0, 0) }} />
+  if (landingOK) return <Landing onEnter={(m) => location.assign('/app' + (m ? '?m=' + m : ''))} />
   if (intro || session === undefined || (session && profile === undefined)) return <Intro />
-  if (!session) return <div className="app"><Login say={say} initialMode={entered} /><Toast msg={toast} /></div>
+  if (!session) return <div className="app"><Login say={say} initialMode={enterMode === 'in' || enterMode === 'up' ? enterMode : entered} /><Toast msg={toast} /></div>
   if (!profile) return <div className="app"><ProfileSetup ctx={ctx} /><Toast msg={toast} /></div>
 
   const screens = {

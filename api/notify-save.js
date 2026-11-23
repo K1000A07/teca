@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   if (!Array.isArray(subs) || !subs.length) return res.status(200).json({ sent: 0 })
   webpush.setVapidDetails('mailto:hola@teca.app', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY)
   const { saver, title, kind } = subs[0]
-  const payload = JSON.stringify({ title: `${saver} guardó ${title}`.slice(0, 80), body: `Lo vio en tu ${kind === 'book' ? 'biblio' : kind === 'movie' ? 'filmo' : 'video'}teca. ¡Ganaste 2 tecoins!`, url: '/?tab=news' })
+  const payload = JSON.stringify({ title: `${saver} guardó ${title}`.slice(0, 80), body: `Lo vio en tu ${kind === 'book' ? 'biblio' : kind === 'movie' ? 'filmo' : 'video'}teca. ¡Ganaste 2 tecoins!`, url: '/app?tab=news' })
   let sent = 0
   await Promise.all(subs.map(async (s) => { try { await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400 }); sent++ } catch {} }))
   res.status(200).json({ sent })

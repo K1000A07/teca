@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   if (!r.ok) return res.status(403).json({ error: 'No autorizado' })
   const subs = await r.json()
   webpush.setVapidDetails('mailto:hola@teca.app', VAPID_PUBLIC, process.env.VAPID_PRIVATE_KEY)
-  const payload = JSON.stringify({ title: String(title).slice(0, 80), body: String(body || '').slice(0, 200), url: url || '/' })
+  const payload = JSON.stringify({ title: String(title).slice(0, 80), body: String(body || '').slice(0, 200), url: url || '/app' })
   let sent = 0, gone = 0
   await Promise.all(subs.map(async (s) => {
     try { await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 86400 }); sent++ }

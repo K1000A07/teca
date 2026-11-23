@@ -89,7 +89,7 @@ export function AdminApp({ session, profile, say }) {
       <div className="serif" style={{ fontSize: 80, lineHeight: .8 }}>teca</div>
       <h1 className="h" style={{ fontSize: 30, marginTop: 24 }}>Esta parte es solo para administración</h1>
       <p className="body" style={{ marginTop: 10 }}>Tu cuenta ({session.user.email}) no tiene acceso al panel.</p>
-      <a href="/" className="btn" style={{ marginTop: 24, textDecoration: 'none' }}>Ir a mi teca</a>
+      <a href="/app" className="btn" style={{ marginTop: 24, textDecoration: 'none' }}>Ir a mi teca</a>
     </div>
   )
 
@@ -108,7 +108,7 @@ export function AdminApp({ session, profile, say }) {
       <header className="between" style={{ flexWrap: 'wrap', gap: 16, padding: '28px 0 8px' }}>
         <div className="row" style={{ gap: 14, alignItems: 'baseline' }}><span className="serif" style={{ fontSize: 54, lineHeight: .8 }}>teca</span><span className="tape" style={{ fontSize: 11, padding: '5px 9px' }}>PANEL</span></div>
         <div className="row" style={{ gap: 12 }}>
-          <a href="/" className="chip" style={{ textDecoration: 'none' }}>Ir a la app</a>
+          <a href="/app" className="chip" style={{ textDecoration: 'none' }}>Ir a la app</a>
           <Avatar p={profile} s={38} />
           <button className="linkbtn" style={{ fontWeight: 300 }} onClick={() => sb.auth.signOut()}>Salir</button>
         </div>
