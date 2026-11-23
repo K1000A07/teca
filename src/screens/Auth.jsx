@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Avatar, Back, Icon } from '../ui.jsx'
+import { Steps, VisibilityStep } from './About.jsx'
 
 export function Intro() {
   return (
@@ -117,7 +118,7 @@ export async function shrinkImage(file, size = 400) {
   return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.85))
 }
 
-export function ProfileForm({ ctx, initial, onDone, submitLabel }) {
+export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
   const [name, setName] = useState(initial?.name || '')
   const [username, setUsername] = useState(initial?.username || '')
   const [emoji, setEmoji] = useState(initial?.emoji || null)
@@ -151,7 +152,8 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel }) {
       : await sb.from('profiles').insert({ id: ctx.uid, ...row }).select().single()
     setBusy(false)
     if (error) return setErr(error.code === '23505' ? 'Ese usuario ya existe. Probá otro.' : 'No se pudo guardar. ' + error.message)
-    ctx.setProfile(data); onDone?.()
+    if (!deferSet) ctx.setProfile(data)
+    onDone?.(data)
   }
   const preview = { name, username, emoji: avatar ? null : emoji, color, avatar_url: avatar }
   return (
@@ -178,12 +180,16 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel }) {
 }
 
 export function ProfileSetup({ ctx }) {
+  const [created, setCreated] = useState(null)
+  if (created) return <VisibilityStep ctx={ctx} data={created} />
   return (<>
-    <div className="pad" style={{ paddingTop: 40 }}>
-      <h1 className="h" style={{ fontSize: 34 }}>Armá tu perfil</h1>
+    <Steps n={2} />
+    <div className="pad" style={{ paddingTop: 22 }}>
+      <div className="light">Paso 2 de 4</div>
+      <h1 className="h" style={{ fontSize: 34, marginTop: 8 }}>Armá tu perfil</h1>
       <p className="body" style={{ marginTop: 6 }}>Así te van a ver tus amigos.</p>
     </div>
-    <ProfileForm ctx={ctx} submitLabel="Entrar a mi teca" />
+    <ProfileForm ctx={ctx} submitLabel="Seguir" deferSet onDone={setCreated} />
     <div className="pad" style={{ paddingBottom: 30 }}><button className="linkbtn" style={{ fontWeight: 300 }} onClick={() => sb.auth.signOut()}>Salir</button></div>
   </>)
 }

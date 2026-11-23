@@ -94,7 +94,7 @@ export function Settings({ ctx }) {
     <div>
       <Back onBack={ctx.back} title="Ajustes" />
       <div className="pad">
-        <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /></Group>
+        <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /><Row t="Edad y lugar" onClick={() => ctx.go('about')} /></Group>
         <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
         <Group t="Tu teca"><Row t="La que se ve primero" v={TECAS[Math.max(0, curT)][1]} onClick={cycleTeca} /></Group>
         <Group t="La app"><Row t="Notificaciones en el celu" toggle={push === 'on'} onClick={togglePush} /><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>

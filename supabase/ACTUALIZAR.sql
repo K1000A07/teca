@@ -1,4 +1,4 @@
--- TODO EN UNO · decoraciones, lugar libre, catálogo, teca principal, premio por guardar y panel de trabajo
+-- TODO EN UNO · decoraciones, lugar libre, catálogo, teca principal, premio por guardar, panel de trabajo, impresiones y edad/lugar
 -- Se puede correr aunque ya hayas corrido alguno de estos antes.
 
 -- ===== 11_decoraciones =====
@@ -468,3 +468,21 @@ language sql stable security definer set search_path = public as $$
   select '_activos', count(*), count(distinct user_id) from base;
 $$;
 grant execute on function public.admin_ad_report(int, boolean) to authenticated;
+
+-- ===== 22_edad_ubicacion =====
+-- 22 · Edad y lugar donde vivís (datos privados)
+create table if not exists public.profile_private (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  age_range text check (age_range is null or age_range in ('18-24','25-34','35-44','45+')),
+  location text,
+  province text,
+  place_id text,
+  updated_at timestamptz not null default now()
+);
+alter table public.profile_private enable row level security;
+drop policy if exists "mis datos privados" on public.profile_private;
+create policy "mis datos privados" on public.profile_private for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "admin ve datos privados" on public.profile_private;
+create policy "admin ve datos privados" on public.profile_private for select to authenticated using (public.is_admin());
+grant select, insert, update on public.profile_private to authenticated;

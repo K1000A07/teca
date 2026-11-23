@@ -13,6 +13,7 @@ import { NEWS_KEY, Tutorial, InstallSheet, isStandalone } from './screens/Tutori
 import { AdminApp } from './screens/Admin.jsx'
 import { PushPrompt, shouldAskPush } from './screens/PushPrompt.jsx'
 import { Shop } from './screens/Arrange.jsx'
+import { About } from './screens/About.jsx'
 import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
@@ -163,7 +164,7 @@ export default function App() {
     lib: <Home ctx={ctx} />, friends: <Friends ctx={ctx} />, clubs: <Clubs ctx={ctx} />, rank: <Ranking ctx={ctx} />, me: <Profile ctx={ctx} />,
     friend: <FriendTeca ctx={ctx} person={view.person} />, news: <Notifications ctx={ctx} />,
     settings: <Settings ctx={ctx} />, privacy: <Privacy ctx={ctx} />, policy: <Policy ctx={ctx} />, tecoins: <Tecoins ctx={ctx} />,
-    install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, shop: <Shop ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />,
+    install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, shop: <Shop ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />, about: <About ctx={ctx} />,
   }
   const root = stack[0].s
   return (
