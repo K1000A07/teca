@@ -4,7 +4,7 @@ import { Icon, Sheet } from '../ui.jsx'
 const STEPS = [
   { target: 'tabs', title: 'Tres estantes en uno', text: <>Libros en tu biblio<span className="serif">teca</span>, pelis en tu filmo<span className="serif">teca</span> y series en tu video<span className="serif">teca</span>. Deslizá para cambiar.</>, radius: 8 },
   { target: 'add', title: 'Cargá lo que terminaste', text: 'Tocá + y escribí el título. Sumale estrellas y, si querés, una reseña.', radius: 99 },
-  { target: 'shelf', title: 'Acomodá tu estante', text: 'Dejá el dedo apretado un segundo sobre un título y arrastralo adonde quieras. Ahí también ponés tus decoraciones.', radius: 8 },
+  { target: 'shelf', title: 'Acomodá tu estante', text: 'Tocá Acomodar, o dejá el dedo apretado un segundo sobre un título, y arrastralo adonde quieras. Ahí también ponés tus decoraciones.', radius: 8 },
   { target: 'coins', title: 'Ganá tecoins y decorá', text: 'Cada título que cargás suma tecoins. Canjealos por plantas, gatos y velas para tu estante.', radius: 99 },
   { target: 'friends', title: 'Sumá a tus amigos', text: 'Buscalos por usuario o mandales tu link: si se suman, ganan tecoins los dos.', radius: 99 },
 ]

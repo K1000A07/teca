@@ -47,6 +47,7 @@ export default function App() {
   const [decos, setDecos] = useState([])
   const [spent, setSpent] = useState(0)
   const [hideNav, setHideNav] = useState(false)
+  const [arrangeReq, setArrangeReq] = useState(false)
 
   const uid = session?.user?.id
   const view = stack[stack.length - 1]
@@ -136,6 +137,8 @@ export default function App() {
   // ----- navegación con el botón "atrás" del celu -----
   const go = useCallback((s, params = {}) => { setStack((st) => [...st, { s, ...params }]); history.pushState({}, '') }, [])
   const tab = useCallback((s) => setStack([{ s }]), [])
+  const arrange = useCallback(() => { setArrangeReq(true); setStack([{ s: 'lib' }]) }, [])
+  const clearArrange = useCallback(() => setArrangeReq(false), [])
   const back = useCallback(() => setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)), [])
   useEffect(() => { const f = () => { setSheet(null); setStack((st) => (st.length > 1 ? st.slice(0, -1) : st)) }; window.addEventListener('popstate', f); return () => window.removeEventListener('popstate', f) }, [])
 
@@ -146,7 +149,7 @@ export default function App() {
   const hasNews = incoming.length > 0 || feed.some((i) => new Date(i.created_at).getTime() > lastSeen) || saveRewards.some((r) => new Date(r.created_at).getTime() > lastSeen)
 
   useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
-  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
+  const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, arrange, arrangeReq, clearArrange, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')

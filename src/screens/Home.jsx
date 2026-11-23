@@ -55,6 +55,7 @@ export function Home({ ctx }) {
   const mine = ctx.items.filter((i) => i.kind === kind)
   const b = useBrowse(ctx.items, kind)
   useEffect(() => { b.reset() }, [kind])
+  useEffect(() => { if (ctx.arrangeReq) { setEditing(true); ctx.clearArrange() } }, [ctx.arrangeReq])
   useEffect(() => { if (editing) { b.reset(); b.setView('shelf'); b.setOpen(false) } }, [editing])
   const allEntries = buildEntries(ctx.items, ctx.decos, kind)
   const entries = b.active && !editing ? allEntries.filter((e) => e.type === 'item' && b.match(e.ref)) : allEntries
@@ -105,6 +106,7 @@ export function Home({ ctx }) {
       ) : <TopBar title={<Teca pre={`Mi ${KINDS[kind].teca}`} />} ctx={ctx} />}
       <div className="pad between" style={{ marginTop: 2 }}>
         <span className="light">{editing ? 'Arrastrá a donde quieras' : mine.length ? `${mine.length} ${mine.length === 1 ? KINDS[kind].label : KINDS[kind].plural}${avg ? ` · ★ ${avg}` : ''} · ${year}` : 'Todavía está vacía'}</span>
+        {!editing && (mine.length > 0 || ctx.decos.length > 0) && <button className="chip" style={{ padding: '7px 14px', fontSize: 13 }} onClick={() => setEditing(true)}>Acomodar</button>}
       </div>
       <TecaTabs kind={kind} setKind={(k) => { setSel(null); setKind(k) }} />
       {askPush && !editing && (

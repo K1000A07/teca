@@ -198,8 +198,9 @@ export function Shop({ ctx }) {
       <Back onBack={ctx.back} title="Canjear tecoins" right={<CoinPill n={ctx.coins} />} />
       <div className="pad">
         <h1 className="h" style={{ fontSize: 32 }}>Decorá tu teca</h1>
-        <p className="body" style={{ marginTop: 8, fontSize: 14 }}>Canjeá tus tecoins por cositas para tu estante. Después las ponés en tu estante: dejá el dedo apretado un segundo sobre un título y abrí <b>Tus decos</b>.</p>
+        <p className="body" style={{ marginTop: 8, fontSize: 14 }}>Canjeá tus tecoins por cositas para tu estante. Después las ponés en tu estante desde <b>Acomodar</b>.</p>
         <button className="linkbtn" style={{ marginTop: 8 }} onClick={() => ctx.go('tecoins')}>Ver cuánto vale cada cosa</button>
+        {ctx.decos.some((d) => placeable(d.kind)) && <button className="btn" style={{ marginTop: 14 }} onClick={ctx.arrange}>Acomodar mi estante</button>}
         <div style={{ marginTop: 18 }}><CatChips cat={cat} setCat={setCat} /></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 14, marginTop: 16, justifyItems: 'center' }}><ShopTiles ctx={ctx} actions={actions} kind={null} cat={cat} /></div>
       </div>
