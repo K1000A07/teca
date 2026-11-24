@@ -109,11 +109,15 @@ export default function App() {
   useEffect(() => {
     if (!profile || !uid) return
     // Cuentas de antes del tutorial nuevo: solo ven la novedad de acomodar
-    if (!localStorage.getItem(`teca.tour2.${uid}`)) setTimeout(() => setTour(new Date(profile.created_at) < new Date('2026-11-19T15:00:00Z') ? 'news' : true), 400)
-    else if (!localStorage.getItem(`${NEWS_KEY}.${uid}`)) setTimeout(() => setTour('news'), 400)
+    // Lo visto se guarda en la cuenta (tour_seen), así no se repite al entrar desde la app instalada
+    const seen = profile.tour_seen || []
+    const tourDone = seen.includes('tour2') || !!localStorage.getItem(`teca.tour2.${uid}`)
+    const newsDone = seen.includes('news3') || !!localStorage.getItem(`${NEWS_KEY}.${uid}`)
+    if (!tourDone) setTimeout(() => setTour(new Date(profile.created_at) < new Date('2026-11-19T15:00:00Z') ? 'news' : true), 400)
+    else if (!newsDone) setTimeout(() => setTour('news'), 400)
     else if (shouldAskPush()) setTimeout(() => setAskPush(true), 900)
   }, [profile?.id, uid])
-  const endTour = useCallback(() => { const wasNews = tour === 'news'; localStorage.setItem(`teca.tour2.${uid}`, '1'); localStorage.setItem(`${NEWS_KEY}.${uid}`, '1'); setTour(false); if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid, tour])
+  const endTour = useCallback(() => { const wasNews = tour === 'news'; localStorage.setItem(`teca.tour2.${uid}`, '1'); localStorage.setItem(`${NEWS_KEY}.${uid}`, '1'); setTour(false); const done = ['tour2', 'news3'].filter((k) => !(profile.tour_seen || []).includes(k)); const nuevo = [...(profile.tour_seen || []), ...done]; if (done.length) { setProfile((p) => ({ ...p, tour_seen: nuevo })); sb.from('profiles').update({ tour_seen: nuevo }).eq('id', uid).then(() => {}) } if (shouldAskPush()) setTimeout(() => setAskPush(true), 400) }, [uid, tour])
   useEffect(() => {
     const code = localStorage.getItem('teca.gift')
     if (!profile || !code) return
