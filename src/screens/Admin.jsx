@@ -4,9 +4,9 @@ import { Avatar, Coin, Cover, Stars } from '../ui.jsx'
 import { KINDS, timeAgo } from '../lib.js'
 import { GiftsPanel } from './Profile.jsx'
 import { Review } from './Detail.jsx'
-import { BudgetPanel, ContentPanel, DocsPanel } from './Work.jsx'
-import { KanbanPanel } from './Kanban.jsx'
+import { BudgetPanel, DocsPanel } from './Work.jsx'
 import { ImpressionsPanel } from './Impressions.jsx'
+import { MetasPanel } from './Metas.jsx'
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 const DAY = 864e5
@@ -16,8 +16,6 @@ export const PERMS = [
   ['impresiones', 'Impresiones', 'Cuántas veces se ve cada pantalla con publicidad'],
   ['avisos', 'Notificaciones', 'Mandar avisos al celu de todas las personas'],
   ['regalos', 'Links de regalo', 'Crear y ver links de regalo'],
-  ['tareas', 'Tareas', 'El tablero de tareas'],
-  ['contenido', 'Contenido', 'Contenido para redes y su reporte'],
   ['presupuesto', 'Presupuesto', 'Inversión estimada y gastos'],
   ['docs', 'Documentos', 'Marca, trámites y papeles'],
 ]
@@ -182,10 +180,10 @@ export function AdminApp({ session, profile, say }) {
   const filteredUsers = (users || []).filter((u) => !q || [u.name, u.username, u.email].some((x) => (x || '').toLowerCase().includes(q.toLowerCase())))
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
   // Dos mundos: la app (lo que pasa adentro de teca) y el tablero de trabajo (lo que hacés vos)
-  const NEED = { resumen: 'usuarios', usuarios: 'usuarios', actividad: 'usuarios', impresiones: 'impresiones', avisos: 'avisos', links: 'regalos', kanban: 'tareas', contenido: 'contenido', presupuesto: 'presupuesto', docs: 'docs' }
+  const NEED = { resumen: 'usuarios', metas: 'usuarios', usuarios: 'usuarios', actividad: 'usuarios', impresiones: 'impresiones', avisos: 'avisos', links: 'regalos', presupuesto: 'presupuesto', docs: 'docs' }
   const GROUPS = {
-    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['impresiones', 'Impresiones'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']].filter(([k]) => can(NEED[k])),
-    work: [['kanban', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['docs', 'Documentos']].filter(([k]) => can(NEED[k])),
+    app: [['resumen', 'Resumen'], ['metas', 'Metas'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['impresiones', 'Impresiones'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']].filter(([k]) => can(NEED[k])),
+    work: [['presupuesto', 'Presupuesto'], ['docs', 'Documentos']].filter(([k]) => can(NEED[k])),
   }
   const firstTab = GROUPS.app[0]?.[0] || GROUPS.work[0]?.[0]
   const mine = [...GROUPS.app, ...GROUPS.work].some(([k]) => k === tab)
@@ -207,7 +205,7 @@ export function AdminApp({ session, profile, say }) {
       </div>
       <nav className="row" style={{ gap: 4, padding: '14px 0 22px', flexWrap: 'wrap', borderBottom: '1.5px solid rgba(20,18,16,.12)', marginBottom: 24 }}>{T.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ border: 0, background: 'none', padding: '8px 12px', fontWeight: tab === k ? 800 : 300, fontSize: 15, cursor: 'pointer', color: 'var(--ink)', boxShadow: tab === k ? 'inset 0 -3px 0 var(--ink)' : 'none' }}>{l}</button>)}</nav>
 
-      {tab === 'kanban' ? <KanbanPanel say={say} /> : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'impresiones' ? <ImpressionsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      {tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'impresiones' ? <ImpressionsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : tab === 'metas' ? <MetasPanel users={users} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />
