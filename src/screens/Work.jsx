@@ -41,76 +41,6 @@ function Editable({ value, onSave, placeholder, area, style }) {
 
 // ---------- TAREAS ----------
 export const PRIORITIES = [['ahora', 'Ahora', 'Noviembre y diciembre: cosas gratis o baratas que se pueden hacer ya.'], ['antes', 'Antes de marzo', 'Para tener todo listo cuando arranque la app.'], ['app', 'Desde marzo', 'Cuando empecemos con la app para las tiendas.']]
-const AREAS = [['', 'Todas'], ['admin', 'Administrativo'], ['creativo', 'Creativo']]
-
-function TaskCard({ t, save, del }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div style={{ ...card(t.done ? '#F3F1EC' : '#fff'), opacity: t.done ? .6 : 1 }}>
-      <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
-        <input type="checkbox" checked={!!t.done} onChange={(e) => save({ ...t, done: e.target.checked })} aria-label="Hecha" style={{ marginTop: 3, width: 18, height: 18, accentColor: '#141210' }} />
-        <button onClick={() => setOpen(!open)} style={{ flex: 1, textAlign: 'left', border: 0, background: 'none', padding: 0, color: 'inherit', cursor: 'pointer' }}>
-          <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.02em', lineHeight: 1.2, textDecoration: t.done ? 'line-through' : 'none' }}>{t.title}</div>
-          <div className="row" style={{ gap: 6, marginTop: 6 }}>
-            <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', padding: '3px 8px', borderRadius: 99, background: t.area === 'creativo' ? 'var(--cel)' : 'var(--lim)' }}>{t.area === 'creativo' ? 'creativo' : 'administrativo'}</span>
-            {t.cost && <span style={{ fontSize: 12, fontWeight: 300 }}>{t.cost}</span>}
-          </div>
-          {!open && t.body && <div style={{ fontWeight: 300, fontSize: 13, marginTop: 6, lineHeight: 1.35 }}>{t.body}</div>}
-        </button>
-      </div>
-      {open && (
-        <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-          <Editable value={t.title} onSave={(v) => save({ ...t, title: v })} />
-          <Editable area value={t.body} onSave={(v) => save({ ...t, body: v })} placeholder="Notas" />
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={t.area} onChange={(e) => save({ ...t, area: e.target.value })}>{AREAS.slice(1).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
-            <select className="input" style={{ width: 'auto', padding: '9px 11px', fontSize: 14 }} value={t.priority} onChange={(e) => save({ ...t, priority: e.target.value })}>{PRIORITIES.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
-            <Editable value={t.cost} onSave={(v) => save({ ...t, cost: v || null })} placeholder="Costo (opcional)" style={{ width: 160 }} />
-          </div>
-          <div className="between"><button className="linkbtn" style={{ fontSize: 13 }} onClick={() => setOpen(false)}>Listo</button><button className="linkbtn" style={{ fontSize: 13, color: '#B33' }} onClick={() => confirm('¿Borrar esta tarea?') && del(t)}>Borrar</button></div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-export function TasksPanel({ say }) {
-  const T = useTable('admin_tasks')
-  const [area, setArea] = useState('')
-  const [adding, setAdding] = useState(null)
-  const [title, setTitle] = useState('')
-  const [newArea, setNewArea] = useState('admin')
-  if (!T.rows) return <p className="body muted">Cargando…</p>
-  const shown = T.rows.filter((t) => !area || t.area === area)
-  const add = async (priority) => { if (title.trim()) await T.add({ title: title.trim(), area: newArea, priority, position: 999 }, say); setTitle(''); setAdding(null) }
-  return (<>
-    <div className="row" style={{ gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
-      {AREAS.map(([k, l]) => <button key={k} className={`chip ${area === k ? 'on' : ''}`} onClick={() => setArea(k)}>{l}</button>)}
-      <span className="light" style={{ marginLeft: 'auto' }}>{T.rows.filter((t) => t.done).length} de {T.rows.length} hechas</span>
-    </div>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18, alignItems: 'start' }}>
-      {PRIORITIES.map(([k, l, s]) => {
-        const list = shown.filter((t) => t.priority === k).sort((a, b) => (a.done - b.done) || (a.position - b.position))
-        return (
-          <section key={k} style={box}>
-            <div className="between"><h2 style={h2}>{l}</h2><span className="light">{list.filter((t) => t.done).length}/{list.length}</span></div>
-            <p style={sub}>{s}</p>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {list.map((t) => <TaskCard key={t.id} t={t} save={(r) => T.save(r, say)} del={T.del} />)}
-              {adding === k
-                ? <div style={{ display: 'grid', gap: 6 }}>
-                    <input className="input" autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add(k)} placeholder="Nueva tarea" />
-                    <div className="row" style={{ gap: 6 }}>{AREAS.slice(1).map(([a, al]) => <button key={a} className={`chip ${newArea === a ? 'on' : ''}`} style={{ fontSize: 12.5, padding: '5px 10px' }} onClick={() => setNewArea(a)}>{al}</button>)}</div>
-                    <div className="row" style={{ gap: 8 }}><button className="chip on" onClick={() => add(k)}>Agregar</button><button className="linkbtn" onClick={() => { setAdding(null); setTitle('') }}>Cancelar</button></div>
-                  </div>
-                : <button className="chip" style={{ justifyContent: 'center', background: 'transparent' }} onClick={() => setAdding(k)}>+ Agregar</button>}
-            </div>
-          </section>
-        )
-      })}
-    </div>
-  </>)
-}
 
 // ---------- CONTENIDO ----------
 export const STAGES = [['idea', 'Idea'], ['guion', 'Guion'], ['grabando', 'Grabando'], ['editando', 'Editando'], ['publicado', 'Publicado']]
@@ -249,29 +179,35 @@ export function ContentPanel({ say }) {
 const FREQ = [['unico', 'pago único'], ['anual', 'por año'], ['mensual', 'por mes']]
 export function BudgetPanel({ say }) {
   const B = useTable('admin_budget')
+  const E = useTable('admin_expenses', 'spent_on')
   const [usd, setUsd] = useState(() => { try { return +localStorage.getItem('teca.usd') || 0 } catch { return 0 } })
   useEffect(() => { try { localStorage.setItem('teca.usd', String(usd || '')) } catch {} }, [usd])
-  const totals = useMemo(() => {
-    const t = { ARS: { now: 0, year: 0 }, USD: { now: 0, year: 0 } }
-    for (const r of B.rows || []) {
-      if (r.optional) continue
-      const a = num(r.amount), c = r.currency === 'USD' ? 'USD' : 'ARS'
-      t[c].now += r.freq === 'mensual' ? a : a
-      t[c].year += r.freq === 'mensual' ? a * 12 : a
+  // Inversión del primer año = lo que ya gastaste (pagos reales) + lo que falta pagar (estimado, sin lo opcional)
+  const cur = (r) => (r.currency === 'USD' ? 'USD' : 'ARS')
+  const parts = useMemo(() => {
+    const spent = { ARS: 0, USD: 0 }, left = { ARS: 0, USD: 0 }
+    for (const r of E.rows || []) spent[cur(r)] += num(r.amount)
+    for (const r of B.rows || []) { if (r.optional || r.paid) continue; left[cur(r)] += r.freq === 'mensual' ? num(r.amount) * 12 : num(r.amount) }
+    return { spent, left }
+  }, [B.rows, E.rows])
+  const totals = { ARS: { year: parts.spent.ARS + parts.left.ARS }, USD: { year: parts.spent.USD + parts.left.USD } }
+  async function setPaid(r) {
+    if (!r.paid) {
+      if (!num(r.amount)) return say('Ponele el monto antes de marcarlo como pagado')
+      if (confirm(`¿Sumar "${r.concept}" a "Lo que ya gastaste" con la fecha de hoy?\n\nSi ya lo cargaste ahí, tocá Cancelar.`)) await E.add({ concept: r.concept, amount: num(r.amount), currency: cur(r), spent_on: new Date().toISOString().slice(0, 10) }, say)
     }
-    return t
-  }, [B.rows])
-  if (!B.rows) return <p className="body muted">Cargando…</p>
+    B.save({ ...r, paid: !r.paid }, say)
+  }
+  if (!B.rows || !E.rows) return <p className="body muted">Cargando…</p>
   const groups = [...new Set(B.rows.map((r) => r.category))]
   const money = (n, c) => (c === 'USD' ? `USD ${n.toLocaleString('es-AR')}` : `$${Math.round(n).toLocaleString('es-AR')}`)
   const inArs = usd ? totals.ARS.year + totals.USD.year * usd : null
-  const paid = (c) => (B.rows || []).filter((r) => r.paid && !r.optional && (r.currency === 'USD' ? 'USD' : 'ARS') === c).reduce((a, r) => a + (r.freq === 'mensual' ? num(r.amount) * 12 : num(r.amount)), 0)
-  const paidTxt = `Ya pagado: ${money(paid('ARS'), 'ARS')}${paid('USD') ? ` + ${money(paid('USD'), 'USD')}` : ''}. Falta: ${money(Math.max(0, totals.ARS.year - paid('ARS')), 'ARS')} + ${money(Math.max(0, totals.USD.year - paid('USD')), 'USD')}.`
+  const paidTxt = `Ya gastaste ${money(parts.spent.ARS, 'ARS')}${parts.spent.USD ? ` + ${money(parts.spent.USD, 'USD')}` : ''}. Falta pagar ${money(parts.left.ARS, 'ARS')}${parts.left.USD ? ` + ${money(parts.left.USD, 'USD')}` : ''}.`
   const td = { padding: '10px 8px', borderBottom: '1px solid rgba(20,18,16,.12)', verticalAlign: 'top', fontSize: 14 }
   return (<>
-    <ExpensesPanel say={say} />
+    <ExpensesPanel say={say} E={E} />
     <h2 style={{ ...h2, marginBottom: 4 }}>Inversión estimada</h2>
-    <p style={{ ...sub, fontSize: 14, marginBottom: 14 }}>Lo que calculamos que va a salir el primer año, incluido lo que ya pagaste. {paidTxt}</p>
+    <p style={{ ...sub, fontSize: 14, marginBottom: 14 }}>Lo que ya gastaste más lo que falta pagar: si cargás un gasto nuevo arriba, se suma solo. {paidTxt}</p>
     <div className="admin-grid" style={{ marginBottom: 22 }}>
       <div style={{ ...card('#E6F04A'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.ARS.year, 'ARS')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en pesos · primer año</div></div>
       <div style={{ ...card('#A9C6F2'), padding: '18px 20px' }}><div style={{ fontWeight: 800, fontSize: 40, letterSpacing: '-0.05em', lineHeight: .9 }}>{money(totals.USD.year, 'USD')}</div><div className="light" style={{ color: 'var(--ink)', marginTop: 8 }}>en dólares, primer año</div></div>
@@ -281,7 +217,7 @@ export function BudgetPanel({ say }) {
         <label className="row" style={{ gap: 6, marginTop: 8, fontWeight: 300, fontSize: 13 }}>dólar a $<input className="input" type="number" value={usd || ''} onChange={(e) => setUsd(+e.target.value)} placeholder="cotización" style={{ width: 110, padding: '6px 9px', fontSize: 14 }} /></label>
       </div>
     </div>
-    <p style={{ fontWeight: 300, fontSize: 14, margin: '0 0 14px' }}>Montos estimados, solo vos (sin equipo). Lo marcado como opcional no suma al total. Tocá cualquier monto para corregirlo cuando sepas el valor real.</p>
+    <p style={{ fontWeight: 300, fontSize: 14, margin: '0 0 14px' }}>Montos estimados, solo vos (sin equipo). Lo marcado como opcional no suma al total. Lo que marcás como pagado pasa a “Lo que ya gastaste”.</p>
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead><tr>{['Concepto', 'Monto', '', 'Frecuencia', 'Estado', ''].map((h, i) => <th key={i} className="light" style={{ textAlign: 'left', padding: '0 8px 8px', fontSize: 10.5 }}>{h}</th>)}</tr></thead>
       <tbody>
@@ -293,7 +229,7 @@ export function BudgetPanel({ say }) {
               <td style={{ ...td, width: 130 }}><input className="input" type="number" defaultValue={r.amount ?? ''} onBlur={(e) => B.save({ ...r, amount: e.target.value === '' ? null : +e.target.value }, say)} style={{ padding: '7px 9px', fontSize: 14 }} /></td>
               <td style={{ ...td, width: 80 }}><select className="input" value={r.currency} onChange={(e) => B.save({ ...r, currency: e.target.value }, say)} style={{ padding: '7px 6px', fontSize: 13 }}><option>ARS</option><option>USD</option></select></td>
               <td style={{ ...td, width: 120 }}><select className="input" value={r.freq} onChange={(e) => B.save({ ...r, freq: e.target.value }, say)} style={{ padding: '7px 6px', fontSize: 13 }}>{FREQ.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></td>
-              <td style={{ ...td, width: 130 }}><button className={`chip ${r.paid ? 'on' : ''}`} style={{ fontSize: 12, padding: '5px 10px' }} onClick={() => B.save({ ...r, paid: !r.paid }, say)}>{r.paid ? 'pagado' : 'pendiente'}</button></td>
+              <td style={{ ...td, width: 130 }}><button className={`chip ${r.paid ? 'on' : ''}`} style={{ fontSize: 12, padding: '5px 10px' }} onClick={() => setPaid(r)}>{r.paid ? 'pagado' : 'pendiente'}</button></td>
               <td style={{ ...td, width: 90 }}><button className="linkbtn" style={{ fontSize: 12 }} onClick={() => B.save({ ...r, optional: !r.optional }, say)}>{r.optional ? 'sumar' : 'opcional'}</button></td>
             </tr>
           ))}
@@ -305,8 +241,9 @@ export function BudgetPanel({ say }) {
 }
 
 // ---------- GASTOS (lo que ya pagaste) ----------
-export function ExpensesPanel({ say }) {
-  const E = useTable('admin_expenses', 'spent_on')
+export function ExpensesPanel({ say, E: shared }) {
+  const own = useTable('admin_expenses', 'spent_on')
+  const E = shared || own
   const [f, setF] = useState({ concept: '', amount: '', currency: 'ARS', spent_on: new Date().toISOString().slice(0, 10) })
   if (!E.rows) return null
   const rows = [...E.rows].sort((a, b) => (b.spent_on || '').localeCompare(a.spent_on || ''))

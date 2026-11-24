@@ -9,7 +9,7 @@ App social (PWA) de Cami (Camila Manucci, directora de arte, Buenos Aires) para 
 Cami escribe en castellano rioplatense (vos), prefiere respuestas directas, sin vueltas ni lenguaje corporativo, con poco formato. Es diseñadora: le importa mucho cómo se ve y se siente cada cosa.
 
 ## Dónde está todo
-- App en vivo: https://appteca.com.ar (dominio comprado en NIC Argentina el 20/11/2026; también responde https://teca-tau.vercel.app). Panel de admin en /admin, usuario admin: k1000a
+- App en vivo: https://appteca.com.ar (dominio comprado en NIC Argentina el 20/11/2026; también responde https://teca-tau.vercel.app). Panel de admin en /admin, usuario admin: k1000a (fundadora: acceso total y única que da permisos al equipo, desde Usuarios › clic derecho; ver supabase/23)
 - Landing: `src/screens/Landing.jsx` + `src/landing/celu.html` y `compu.html` (sacados del brandbook L1/L2). La ve solo quien entra sin sesión desde el navegador a `/`; la app instalada, los links /r/ y /regalo/ y `/?entrar` van directo al login.
 - Código: https://github.com/K1000A07/teca (rama main; Vercel publica solo en cada push)
 - Base de datos y login: Supabase, proyecto `oeppdldydozrraebsquz`
@@ -34,7 +34,7 @@ Claves: la publishable key de Supabase y la clave pública VAPID están en el c�
 - `src/screens/Detail.jsx`: tarjeta del título (deslizar a los costados entre títulos, para abajo para cerrar).
 - `src/screens/Tutorial.jsx`: tutorial de 8 pasos y novedades (`NEWS_KEY`).
 - `src/screens/Admin.jsx` + `Kanban.jsx` + `Work.jsx` + `Board.jsx`: panel con "La app" (resumen, usuarios, actividad, notificaciones, links de regalo) y "Tablero de trabajo" (tareas tipo Trello, contenido para redes con reporte, presupuesto y gastos, documentos, versión anterior).
-- `supabase/`: un archivo SQL por cambio (02 al 22). `ACTUALIZAR.sql` junta del 11 al 22 y se puede correr más de una vez.
+- `supabase/`: un archivo SQL por cambio (02 al 23). `ACTUALIZAR.sql` junta del 11 al 23 y se puede correr más de una vez.
 
 ## Cómo se trabaja
 - Cambios de base de datos: un SQL nuevo en `supabase/NN_nombre.sql` (idempotente: `if not exists`, `drop ... if exists`) y sumarlo a `ACTUALIZAR.sql`. Cami lo pega en el SQL Editor de Supabase. Avisarle siempre qué correr.

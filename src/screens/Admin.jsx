@@ -4,13 +4,86 @@ import { Avatar, Coin, Cover, Stars } from '../ui.jsx'
 import { KINDS, timeAgo } from '../lib.js'
 import { GiftsPanel } from './Profile.jsx'
 import { Review } from './Detail.jsx'
-import { BoardPanel } from './Board.jsx'
-import { BudgetPanel, ContentPanel, DocsPanel, TasksPanel } from './Work.jsx'
+import { BudgetPanel, ContentPanel, DocsPanel } from './Work.jsx'
 import { KanbanPanel } from './Kanban.jsx'
 import { ImpressionsPanel } from './Impressions.jsx'
 
 const fmt = (d) => (d ? new Date(d).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: '2-digit' }) : '—')
 const DAY = 864e5
+// Qué función puede ver cada persona del equipo (la fundadora tiene todas)
+export const PERMS = [
+  ['usuarios', 'Usuarios y actividad', 'Resumen, lista de personas con su mail y lo que cargan, edad y lugar'],
+  ['impresiones', 'Impresiones', 'Cuántas veces se ve cada pantalla con publicidad'],
+  ['avisos', 'Notificaciones', 'Mandar avisos al celu de todas las personas'],
+  ['regalos', 'Links de regalo', 'Crear y ver links de regalo'],
+  ['tareas', 'Tareas', 'El tablero de tareas'],
+  ['contenido', 'Contenido', 'Contenido para redes y su reporte'],
+  ['presupuesto', 'Presupuesto', 'Inversión estimada y gastos'],
+  ['docs', 'Documentos', 'Marca, trámites y papeles'],
+]
+
+function Switch({ on, onChange, label, sub }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="row" style={{ width: '100%', gap: 14, padding: '11px 0', border: 0, borderBottom: '1px solid var(--line)', background: 'none', textAlign: 'left', cursor: 'pointer' }}>
+      <span style={{ flex: 1 }}><span style={{ display: 'block', fontWeight: 800, fontSize: 15.5, letterSpacing: '-0.02em' }}>{label}</span><span style={{ display: 'block', fontWeight: 300, fontSize: 12.5, marginTop: 1 }}>{sub}</span></span>
+      <span style={{ flex: 'none', width: 46, height: 28, borderRadius: 99, background: on ? 'var(--lim)' : '#D9D6CF', boxShadow: 'inset 0 0 0 1.5px var(--ink)', position: 'relative', transition: 'background .15s' }}><span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: 99, background: 'var(--ink)', transition: 'left .15s' }} /></span>
+    </button>
+  )
+}
+
+function PermsModal({ u, onClose, onSaved, say }) {
+  const [perms, setPerms] = useState(u.admin_perms || [])
+  const [busy, setBusy] = useState(false)
+  const isNew = !u.admin_perms
+  const toggle = (k, v) => setPerms((p) => (v ? [...new Set([...p, k])] : p.filter((x) => x !== k)))
+  async function save() {
+    setBusy(true)
+    const { error } = await sb.rpc('admin_set_access', { p_user: u.id, p_perms: perms })
+    setBusy(false)
+    if (error) return say(error.message || 'No se pudo guardar')
+    say(isNew ? 'Ya tiene acceso al panel' : 'Permisos guardados'); onSaved()
+  }
+  async function remove() {
+    if (!confirm(`¿Sacarle a ${u.name || u.email} el acceso al panel?`)) return
+    setBusy(true)
+    const { error } = await sb.rpc('admin_remove_access', { p_user: u.id })
+    setBusy(false)
+    if (error) return say(error.message || 'No se pudo sacar')
+    say('Ya no tiene acceso'); onSaved()
+  }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(20,18,16,.45)', display: 'grid', placeItems: 'center', padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Permisos" style={{ background: '#fff', borderRadius: 26, padding: 24, width: '100%', maxWidth: 460, maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 0 0 1.5px var(--ink), 0 30px 60px -20px rgba(0,0,0,.5)' }}>
+        <div className="light">{isNew ? 'Sumar al equipo' : 'Permisos del equipo'}</div>
+        <h2 className="h" style={{ fontSize: 28, marginTop: 4 }}>{u.name || u.email}</h2>
+        <p className="body" style={{ fontSize: 14, marginTop: 4 }}>Prendé lo que puede ver y usar en el panel. Vos siempre tenés acceso a todo y nadie más puede cambiar esto.</p>
+        <div style={{ marginTop: 10 }}>{PERMS.map(([k, l, d]) => <Switch key={k} on={perms.includes(k)} onChange={(v) => toggle(k, v)} label={l} sub={d} />)}</div>
+        <div className="between" style={{ marginTop: 12 }}>
+          <button type="button" className="linkbtn" onClick={() => setPerms(perms.length === PERMS.length ? [] : PERMS.map(([k]) => k))}>{perms.length === PERMS.length ? 'Apagar todo' : 'Prender todo'}</button>
+          {!isNew && <button type="button" className="linkbtn" style={{ color: '#B33' }} onClick={remove} disabled={busy}>Sacar del equipo</button>}
+        </div>
+        <div className="row" style={{ gap: 8, marginTop: 18 }}>
+          <button className="btn" style={{ flex: 1, width: 'auto' }} onClick={save} disabled={busy}>{busy ? 'Un segundo…' : isNew ? 'Dar acceso' : 'Guardar'}</button>
+          <button className="btn white" style={{ width: 'auto', padding: '0 22px' }} onClick={onClose}>Cancelar</button>
+        </div>
+        {isNew && !perms.length && <p className="muted" style={{ fontSize: 12.5, marginTop: 10 }}>Si no prendés nada, entra al panel pero no ve nada.</p>}
+      </div>
+    </div>
+  )
+}
+
+function RowMenu({ m, onPick, onClose }) {
+  const has = !!m.u.admin_perms
+  const item = (l, f, danger) => <button type="button" onClick={f} style={{ display: 'block', width: '100%', textAlign: 'left', border: 0, background: 'none', padding: '11px 16px', fontWeight: 800, fontSize: 14.5, cursor: 'pointer', color: danger ? '#B33' : 'var(--ink)' }}>{l}</button>
+  return (
+    <div onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose() }} style={{ position: 'fixed', inset: 0, zIndex: 40 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ position: 'fixed', left: Math.min(m.x, window.innerWidth - 230), top: Math.min(m.y, window.innerHeight - 120), width: 220, background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 0 0 1.5px var(--ink), 0 18px 36px -12px rgba(0,0,0,.4)' }}>
+        <div className="light" style={{ padding: '10px 16px 2px' }}>{m.u.name || m.u.email}</div>
+        {item(has ? 'Cambiar permisos…' : 'Agregar al equipo…', () => onPick(m.u))}
+      </div>
+    </div>
+  )
+}
 
 function Stat({ n, label, sub, bg = '#fff' }) {
   return (
@@ -42,13 +115,13 @@ function Bars({ items }) {
   )
 }
 
-function UserRow({ u, open, onToggle }) {
+function UserRow({ u, open, onToggle, canManage, onMenu }) {
   const [items, setItems] = useState(null)
   useEffect(() => { if (open && !items) sb.from('items').select('*').eq('user_id', u.id).order('created_at', { ascending: false }).then(({ data }) => setItems(data || [])) }, [open])
   const p = { name: u.name || u.email, username: u.username, emoji: u.emoji, color: u.color || '#EEE', avatar_url: u.avatar_url }
   return (<>
-    <tr onClick={onToggle} style={{ cursor: 'pointer', background: open ? 'var(--cell)' : undefined }}>
-      <td><div className="row" style={{ gap: 10 }}><Avatar p={p} s={34} /><div><div style={{ fontWeight: 800 }}>{u.name || <span className="muted">sin perfil</span>}</div><div className="muted" style={{ fontSize: 12.5 }}>{u.username ? '@' + u.username : ''}</div></div></div></td>
+    <tr onClick={onToggle} onContextMenu={canManage && !u.is_founder ? (e) => { e.preventDefault(); onMenu(u, e.clientX, e.clientY) } : undefined} style={{ cursor: 'pointer', background: open ? 'var(--cell)' : undefined }}>
+      <td><div className="row" style={{ gap: 10 }}><Avatar p={p} s={34} /><div><div style={{ fontWeight: 800 }}>{u.name || <span className="muted">sin perfil</span>}{u.is_founder ? <span className="tape" style={{ fontSize: 9, padding: '2px 6px', marginLeft: 8 }}>FUNDADORA</span> : u.admin_perms ? <span className="tape" style={{ fontSize: 9, padding: '2px 6px', marginLeft: 8, background: 'var(--cel)' }}>EQUIPO</span> : null}</div><div className="muted" style={{ fontSize: 12.5 }}>{u.username ? '@' + u.username : ''}</div></div></div></td>
       <td style={{ fontWeight: 300 }}>{u.email}</td>
       <td>{fmt(u.signed_up)}</td>
       <td>{u.last_seen ? timeAgo(u.last_seen) : '—'}</td>
@@ -56,9 +129,10 @@ function UserRow({ u, open, onToggle }) {
       <td><span className="row" style={{ gap: 4 }}><Coin s={14} />{u.coins}</span></td>
       <td>{u.friends}</td>
       <td style={{ fontWeight: 300, fontSize: 12.5 }}>{u.gift_code || '—'}</td>
+      {canManage && <td style={{ width: 40, textAlign: 'right' }}>{!u.is_founder && <button type="button" aria-label="Más opciones" className="linkbtn" style={{ fontSize: 20, padding: '2px 8px' }} onClick={(e) => { e.stopPropagation(); const r = e.currentTarget.getBoundingClientRect(); onMenu(u, r.left - 180, r.bottom + 4) }}>⋯</button>}</td>}
     </tr>
     {open && (
-      <tr><td colSpan={8} style={{ background: 'var(--cell)', padding: '6px 16px 18px' }}>
+      <tr><td colSpan={9} style={{ background: 'var(--cell)', padding: '6px 16px 18px' }}>
         {items === null ? 'Cargando…' : !items.length ? <span className="muted">Todavía no cargó nada.</span> : (
           <div style={{ display: 'flex', gap: 14, overflowX: 'auto', paddingTop: 6 }}>
             {items.map((it) => <div key={it.id} style={{ flex: 'none', width: 92 }}><Cover it={it} w={92} /><div style={{ fontWeight: 800, fontSize: 12.5, marginTop: 6, lineHeight: 1.1 }}>{it.title}</div><div className="muted" style={{ fontSize: 11 }}>{KINDS[it.kind].label} · {fmt(it.created_at)}</div></div>)}
@@ -71,20 +145,31 @@ function UserRow({ u, open, onToggle }) {
 
 export function AdminApp({ session, profile, say }) {
   const [tab, setTab] = useState('resumen')
-  const [oldView, setOldView] = useState('tablero')
   const [users, setUsers] = useState(null)
   const [items, setItems] = useState(null)
   const [q, setQ] = useState('')
   const [open, setOpen] = useState(null)
   const [kind, setKind] = useState('all')
+  const [access, setAccess] = useState(null)
+  const [menu, setMenu] = useState(null)
+  const [perms, setPerms] = useState(null)
+  const ALL = PERMS.map(([k]) => k)
+  // Qué puede hacer esta cuenta en el panel (si todavía no se corrió el SQL 23, vale lo de antes: administradora = todo)
   useEffect(() => {
-    if (!profile?.is_admin) return
-    sb.rpc('admin_users').then(({ data, error }) => setUsers(error || !Array.isArray(data) ? [] : data))
-    sb.from('items').select('*').order('created_at', { ascending: false }).limit(500).then(({ data }) => setItems(data || []))
+    sb.rpc('my_access').then(({ data, error }) => setAccess(!error && data ? data : { founder: !!profile?.is_admin, perms: profile?.is_admin ? ALL : [], legacy: true }))
   }, [profile?.is_admin])
+  const can = (k) => !!access && (access.founder || access.perms.includes(k))
+  const hasAccess = !!access && (access.founder || access.perms.length > 0)
+  const loadUsers = () => sb.rpc('admin_users').then(({ data, error }) => setUsers(error || !Array.isArray(data) ? [] : data))
+  useEffect(() => {
+    if (!access || !can('usuarios')) return
+    loadUsers()
+    sb.from('items').select('*').order('created_at', { ascending: false }).limit(500).then(({ data }) => setItems(data || []))
+  }, [access])
   const byId = useMemo(() => Object.fromEntries((users || []).map((u) => [u.id, u])), [users])
 
-  if (!profile?.is_admin) return (
+  if (!access) return <p className="body muted" style={{ padding: 40 }}>Cargando…</p>
+  if (!hasAccess) return (
     <div style={{ maxWidth: 520, margin: '0 auto', padding: '120px 24px', textAlign: 'center' }}>
       <div className="serif" style={{ fontSize: 80, lineHeight: .8 }}>teca</div>
       <h1 className="h" style={{ fontSize: 30, marginTop: 24 }}>Esta parte es solo para administración</h1>
@@ -97,10 +182,14 @@ export function AdminApp({ session, profile, say }) {
   const filteredUsers = (users || []).filter((u) => !q || [u.name, u.username, u.email].some((x) => (x || '').toLowerCase().includes(q.toLowerCase())))
   const feed = (items || []).filter((i) => kind === 'all' || i.kind === kind)
   // Dos mundos: la app (lo que pasa adentro de teca) y el tablero de trabajo (lo que hacés vos)
+  const NEED = { resumen: 'usuarios', usuarios: 'usuarios', actividad: 'usuarios', impresiones: 'impresiones', avisos: 'avisos', links: 'regalos', kanban: 'tareas', contenido: 'contenido', presupuesto: 'presupuesto', docs: 'docs' }
   const GROUPS = {
-    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['impresiones', 'Impresiones'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']],
-    work: [['kanban', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['docs', 'Documentos'], ['viejo', 'Versión anterior']],
+    app: [['resumen', 'Resumen'], ['usuarios', 'Usuarios'], ['actividad', 'Actividad'], ['impresiones', 'Impresiones'], ['avisos', 'Notificaciones'], ['links', 'Links de regalo']].filter(([k]) => can(NEED[k])),
+    work: [['kanban', 'Tareas'], ['contenido', 'Contenido'], ['presupuesto', 'Presupuesto'], ['docs', 'Documentos']].filter(([k]) => can(NEED[k])),
   }
+  const firstTab = GROUPS.app[0]?.[0] || GROUPS.work[0]?.[0]
+  const mine = [...GROUPS.app, ...GROUPS.work].some(([k]) => k === tab)
+  if (!mine) { if (firstTab) setTimeout(() => setTab(firstTab)); return null }
   const group = GROUPS.work.some(([k]) => k === tab) ? 'work' : 'app'
   const T = GROUPS[group]
   return (
@@ -114,14 +203,11 @@ export function AdminApp({ session, profile, say }) {
         </div>
       </header>
       <div className="row" style={{ gap: 0, marginTop: 14, background: 'var(--cell)', borderRadius: 99, padding: 4, width: 'fit-content' }}>
-        {[['app', 'La app', 'resumen'], ['work', 'Tablero de trabajo', 'kanban']].map(([g, l, first]) => <button key={g} onClick={() => group !== g && setTab(first)} style={{ border: 0, borderRadius: 99, padding: '11px 22px', fontWeight: 800, fontSize: 15.5, letterSpacing: '-0.02em', cursor: 'pointer', background: group === g ? 'var(--ink)' : 'transparent', color: group === g ? 'var(--lim)' : 'var(--ink)' }}>{l}</button>)}
+        {[['app', 'La app'], ['work', 'Tablero de trabajo']].filter(([g]) => GROUPS[g].length).map(([g, l]) => <button key={g} onClick={() => group !== g && setTab(GROUPS[g][0][0])} style={{ border: 0, borderRadius: 99, padding: '11px 22px', fontWeight: 800, fontSize: 15.5, letterSpacing: '-0.02em', cursor: 'pointer', background: group === g ? 'var(--ink)' : 'transparent', color: group === g ? 'var(--lim)' : 'var(--ink)' }}>{l}</button>)}
       </div>
-      <nav className="row" style={{ gap: 4, padding: '14px 0 22px', flexWrap: 'wrap', borderBottom: '1.5px solid rgba(20,18,16,.12)', marginBottom: 24 }}>{T.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ border: 0, background: 'none', padding: '8px 12px', fontWeight: tab === k ? 800 : 300, fontSize: 15, cursor: 'pointer', color: k === 'viejo' && tab !== k ? 'rgba(20,18,16,.5)' : 'var(--ink)', boxShadow: tab === k ? 'inset 0 -3px 0 var(--ink)' : 'none' }}>{l}</button>)}</nav>
+      <nav className="row" style={{ gap: 4, padding: '14px 0 22px', flexWrap: 'wrap', borderBottom: '1.5px solid rgba(20,18,16,.12)', marginBottom: 24 }}>{T.map(([k, l]) => <button key={k} onClick={() => setTab(k)} style={{ border: 0, background: 'none', padding: '8px 12px', fontWeight: tab === k ? 800 : 300, fontSize: 15, cursor: 'pointer', color: 'var(--ink)', boxShadow: tab === k ? 'inset 0 -3px 0 var(--ink)' : 'none' }}>{l}</button>)}</nav>
 
-      {tab === 'kanban' ? <KanbanPanel say={say} /> : tab === 'viejo' ? (<>
-        <div className="row" style={{ gap: 8, marginBottom: 18 }}><span style={{ fontWeight: 300, fontSize: 14 }}>La primera versión, por si querés volver:</span>{[['tablero', 'Tablero'], ['tareas', 'Tareas por prioridad']].map(([k, l]) => <button key={k} className={`chip ${oldView === k ? 'on' : ''}`} onClick={() => setOldView(k)}>{l}</button>)}</div>
-        {oldView === 'tablero' ? <BoardPanel say={say} /> : <TasksPanel say={say} />}
-      </>) : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'impresiones' ? <ImpressionsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
+      {tab === 'kanban' ? <KanbanPanel say={say} /> : tab === 'contenido' ? <ContentPanel say={say} /> : tab === 'presupuesto' ? <BudgetPanel say={say} /> : tab === 'docs' ? <DocsPanel say={say} /> : tab === 'impresiones' ? <ImpressionsPanel say={say} /> : tab === 'avisos' ? <PushPanel session={session} say={say} /> : (!users || !items) && tab !== 'links' ? <p className="body muted">Cargando…</p> : tab === 'resumen' ? (<>
         <div className="admin-grid">
           <Stat n={users.length} label="Personas" sub={`${users.filter((u) => new Date(u.signed_up) > week).length} se sumaron esta semana`} bg="#E6F04A" />
           <Stat n={items.length} label="Títulos cargados" sub={`${items.filter((i) => new Date(i.created_at) > week).length} esta semana`} bg="#A9C6F2" />
@@ -143,11 +229,13 @@ export function AdminApp({ session, profile, say }) {
         <input className="input" style={{ maxWidth: 360 }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, usuario o mail" />
         <div style={{ overflowX: 'auto', marginTop: 16 }}>
           <table className="admin-table">
-            <thead><tr><th>Persona</th><th>Mail</th><th>Se sumó</th><th>Última vez</th><th>Títulos</th><th>Tecoins</th><th>Amigos</th><th>Regalo</th></tr></thead>
-            <tbody>{filteredUsers.map((u) => <UserRow key={u.id} u={u} open={open === u.id} onToggle={() => setOpen(open === u.id ? null : u.id)} />)}</tbody>
+            <thead><tr><th>Persona</th><th>Mail</th><th>Se sumó</th><th>Última vez</th><th>Títulos</th><th>Tecoins</th><th>Amigos</th><th>Regalo</th>{access.founder && !access.legacy && <th />}</tr></thead>
+            <tbody>{filteredUsers.map((u) => <UserRow key={u.id} u={u} open={open === u.id} onToggle={() => setOpen(open === u.id ? null : u.id)} canManage={access.founder && !access.legacy} onMenu={(usr, x, y) => setMenu({ u: usr, x, y })} />)}</tbody>
           </table>
         </div>
-        <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>Tocá una fila para ver lo que cargó esa persona.</p>
+        <p className="muted" style={{ fontSize: 13, marginTop: 10 }}>Tocá una fila para ver lo que cargó esa persona.{access.founder && !access.legacy ? ' Clic derecho en una persona (o el botón ⋯) para sumarla al equipo y elegir qué puede ver.' : ''}</p>
+        {menu && <RowMenu m={menu} onClose={() => setMenu(null)} onPick={(u) => { setMenu(null); setPerms(u) }} />}
+        {perms && <PermsModal u={perms} say={say} onClose={() => setPerms(null)} onSaved={() => { setPerms(null); loadUsers() }} />}
       </>) : tab === 'actividad' ? (<>
         <div className="row" style={{ gap: 6 }}>{[['all', 'todo'], ['book', 'libros'], ['movie', 'pelis'], ['show', 'series']].map(([k, l]) => <button key={k} className={`chip ${kind === k ? 'lim' : ''}`} onClick={() => setKind(k)}>{l}</button>)}</div>
         <div className="admin-feed" style={{ marginTop: 16 }}>
