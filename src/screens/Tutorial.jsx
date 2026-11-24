@@ -83,6 +83,21 @@ export function Tutorial({ onDone, news }) {
   )
 }
 
+// Tarjeta fija arriba de Mi teca: se queda hasta que la app está agregada al inicio (no tiene cerrar)
+export function InstallCard({ onOpen }) {
+  if (isStandalone()) return null
+  return (
+    <div role="note" style={{ margin: '0 auto 18px', maxWidth: 440, background: 'var(--lim)', borderRadius: 22, padding: '16px 18px', boxShadow: 'inset 0 0 0 1.5px var(--ink)', display: 'flex', gap: 14, alignItems: 'center' }}>
+      <img src="/icons/icon-192.png" alt="" style={{ width: 46, height: 46, borderRadius: 11, flex: 'none' }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em' }}>No te olvides de agregar la app a tu inicio</div>
+        <div style={{ fontWeight: 300, fontSize: 13, marginTop: 3, lineHeight: 1.35 }}>Así abrís teca con un toque, como una app, y te llegan los avisos.</div>
+      </div>
+      <button className="chip" style={{ flex: 'none', background: 'var(--ink)', color: '#fff', padding: '10px 14px', fontSize: 13.5 }} onClick={onOpen}>Cómo hacerlo</button>
+    </div>
+  )
+}
+
 export function InstallSteps({ os }) {
   const steps = os === 0
     ? [['Tocá compartir', 'En Safari, el botón del cuadrado con la flecha (abajo o arriba, según tu iPhone).', 'share', 'Compartir'], ['Elegí “Agregar a inicio”', 'Si no lo ves, deslizá el menú hacia abajo.', 'plussq', 'Agregar a inicio'], ['Tocá “Agregar” y listo', 'teca aparece en tu pantalla con su ícono.']]

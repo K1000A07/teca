@@ -8,7 +8,7 @@ import { GENRES, KINDS, KIND_ORDER, dustInfo, genreList, plantState } from '../l
 import { sb } from '../supabase.js'
 import { Coin } from '../ui.jsx'
 import { pushSupported, enablePush } from '../push.js'
-import { isStandalone } from './Tutorial.jsx'
+import { isStandalone, InstallCard } from './Tutorial.jsx'
 
 export function TopBar({ title, ctx, coins = true }) {
   return (
@@ -125,6 +125,7 @@ export function Home({ ctx }) {
       )}
       {!editing && mine.length > 0 && <BrowseBar b={b} kind={kind} tour="browse" />}
       <div style={{ height: !editing && mine.length > 0 ? 24 : 14 }} />
+      {!editing && <InstallCard onOpen={() => ctx.openSheet({ t: 'install' })} />}
       {b.view === 'list' && !editing ? <ListView items={b.shown} kind={kind} onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} empty="No hay nada con esa búsqueda." /> :
       <div data-tour="shelf" style={{ width: w, margin: '0 auto' }}><Shelf entries={entries} kind={kind} width={w} styleName={ctx.profile.shelf_style} editing={editing} selected={sel}
         onOpen={(it, list) => ctx.openSheet({ t: 'detail', it, list })} onSelect={(e) => setSel(sel === e ? null : e)}
