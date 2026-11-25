@@ -124,6 +124,8 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
   const [emoji, setEmoji] = useState(initial?.emoji || null)
   const [color, setColor] = useState(initial?.color || COLORS[0])
   const [avatar, setAvatar] = useState(initial?.avatar_url || null)
+  const [terms, setTerms] = useState(false)
+  const [news, setNews] = useState(false)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const fileRef = useRef()
@@ -145,8 +147,11 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
     const u = username.trim().toLowerCase().replace(/^@/, '')
     if (!/^[a-z0-9_.]{3,20}$/.test(u)) return setErr('El usuario va de 3 a 20 caracteres: letras, números, punto o guion bajo.')
     if (!name.trim()) return setErr('Poné tu nombre.')
+    if (!initial && !terms) return setErr('Para seguir tenés que aceptar los términos y la política de privacidad.')
     setBusy(true)
-    const row = { username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar }
+    const now = new Date().toISOString()
+    const consent = initial ? {} : { terms_at: now, news_consent: news, news_at: news ? now : null }
+    const row = { username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar, ...consent }
     const { data, error } = initial
       ? await sb.from('profiles').update(row).eq('id', ctx.uid).select().single()
       : await sb.from('profiles').insert({ id: ctx.uid, ...row }).select().single()
@@ -173,6 +178,16 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>{EMOJIS.map((e) => <button type="button" key={e} onClick={() => setEmoji(emoji === e ? null : e)} style={{ aspectRatio: 1, borderRadius: 11, border: 0, background: emoji === e ? 'var(--lim)' : 'var(--cell)', boxShadow: emoji === e ? 'inset 0 0 0 1.5px var(--ink)' : 'none', fontSize: 19 }}>{e}</button>)}</div></div>}
       {!avatar && <div className="field"><span className="light">Color</span>
         <div className="row">{COLORS.map((c) => <button type="button" key={c} aria-label={`Color ${c}`} onClick={() => setColor(c)} style={{ width: 30, height: 30, borderRadius: '50%', border: 0, background: c, boxShadow: color === c ? '0 0 0 2px #fff, 0 0 0 4px #141210' : 'inset 0 0 0 1px rgba(0,0,0,.08)' }} />)}</div></div>}
+      {!initial && <div style={{ display: 'grid', gap: 14, marginTop: 8 }}>
+        <label className="row" style={{ gap: 10, alignItems: 'flex-start', fontWeight: 300, fontSize: 13.5, lineHeight: 1.4 }}>
+          <input type="checkbox" checked={terms} onChange={(e) => setTerms(e.target.checked)} style={{ marginTop: 3 }} />
+          <span>Acepto los <a href="/terminos" target="_blank" rel="noopener" style={{ fontWeight: 800 }}>términos y condiciones</a> y la <a href="/privacidad" target="_blank" rel="noopener" style={{ fontWeight: 800 }}>política de privacidad</a>.</span>
+        </label>
+        <label className="row" style={{ gap: 10, alignItems: 'flex-start', fontWeight: 300, fontSize: 13.5, lineHeight: 1.4 }}>
+          <input type="checkbox" checked={news} onChange={(e) => setNews(e.target.checked)} style={{ marginTop: 3 }} />
+          <span>Quiero recibir novedades de teca por mail. Me doy de baja cuando quiera.</span>
+        </label>
+      </div>}
       {err && <div className="err">{err}</div>}
       <div style={{ margin: '22px 0 30px' }}><button className="btn" disabled={busy}>{busy ? 'Un segundo…' : submitLabel}</button></div>
     </form>
