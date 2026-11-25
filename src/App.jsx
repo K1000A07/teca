@@ -14,7 +14,7 @@ import { AdminApp } from './screens/Admin.jsx'
 import { PushPrompt, shouldAskPush } from './screens/PushPrompt.jsx'
 import { Shop } from './screens/Arrange.jsx'
 import { About } from './screens/About.jsx'
-import { Profile, Settings, Privacy, Policy, PolicyBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
+import { Profile, Settings, Privacy, Policy, PolicyBody, Terms, TermsBody, Tecoins, Install, Clubs, EditProfile, Gifts, GiftSheet } from './screens/Profile.jsx'
 
 // Guardamos el código de regalo del link (?regalo=...) hasta que la persona tenga su perfil
 let fromLink = false
@@ -160,6 +160,7 @@ export default function App() {
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, arrange, arrangeReq, clearArrange, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
   if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
+  if (location.pathname === '/terminos') return <div className="app"><div className="back"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><TermsBody /></div>
   const isAdminPage = location.pathname.startsWith('/admin')
   if (isAdminPage && session !== undefined && !(session && profile === undefined)) return session ? <><AdminApp session={session} profile={profile} say={say} /><Toast msg={toast} /></> : <div className="app"><Login say={say} /><Toast msg={toast} /></div>
   if (landingOK) return <Landing onEnter={(m) => location.assign('/app' + (m ? '?m=' + m : ''))} />
@@ -170,7 +171,7 @@ export default function App() {
   const screens = {
     lib: <Home ctx={ctx} />, friends: <Friends ctx={ctx} />, clubs: <Clubs ctx={ctx} />, rank: <Ranking ctx={ctx} />, me: <Profile ctx={ctx} />,
     friend: <FriendTeca ctx={ctx} person={view.person} />, news: <Notifications ctx={ctx} />,
-    settings: <Settings ctx={ctx} />, privacy: <Privacy ctx={ctx} />, policy: <Policy ctx={ctx} />, tecoins: <Tecoins ctx={ctx} />,
+    settings: <Settings ctx={ctx} />, privacy: <Privacy ctx={ctx} />, policy: <Policy ctx={ctx} />, terms: <Terms ctx={ctx} />, tecoins: <Tecoins ctx={ctx} />,
     install: <Install ctx={ctx} />, gifts: <Gifts ctx={ctx} />, shop: <Shop ctx={ctx} />, editprofile: <EditProfile ctx={ctx} />, about: <About ctx={ctx} />,
   }
   const root = stack[0].s

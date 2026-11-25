@@ -102,7 +102,7 @@ export function Login({ say, initialMode = null }) {
           </div>
         </form>
       )}
-      <p style={{ marginTop: 'auto', padding: '30px 24px', textAlign: 'center', fontWeight: 300, fontSize: 11.5, color: 'var(--gris)' }}>Al seguir aceptás la <a href="/privacidad" style={{ fontWeight: 800 }}>política de privacidad</a> y recibir avisos de teca.</p>
+      <p style={{ marginTop: 'auto', padding: '30px 24px', textAlign: 'center', fontWeight: 300, fontSize: 11.5, color: 'var(--gris)' }}>Al seguir aceptás los <a href="/terminos" style={{ fontWeight: 800 }}>términos</a> y la <a href="/privacidad" style={{ fontWeight: 800 }}>política de privacidad</a> y recibir avisos de teca.</p>
     </div>
   )
 }

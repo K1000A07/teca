@@ -95,7 +95,7 @@ export function Settings({ ctx }) {
       <Back onBack={ctx.back} title="Ajustes" />
       <div className="pad">
         <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /><Row t="Edad y lugar" onClick={() => ctx.go('about')} /></Group>
-        <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
+        <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /><Row t="Términos y condiciones" onClick={() => ctx.go('terms')} /></Group>
         <Group t="Tu teca"><Row t="La que se ve primero" v={TECAS[Math.max(0, curT)][1]} onClick={cycleTeca} /></Group>
         <Group t="La app"><Row t="Notificaciones en el celu" toggle={push === 'on'} onClick={togglePush} /><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
         {ctx.profile.is_admin && <Group t="Solo para vos"><Row t="Links de regalo" v="tecoins" onClick={() => ctx.go('gifts')} /></Group>}
@@ -140,34 +140,70 @@ export function Privacy({ ctx }) {
         <Group t="Ranking" note="En el ranking general solo se muestran tu nombre de usuario, tu foto de perfil y la cantidad de títulos registrados."><Row t="Mostrar mi perfil en el ranking general" toggle={rank} onClick={toggleRank} /></Group>
         <Group t="Avisos" note="Usamos tu mail solo para mandarte avisos de teca, como novedades o rankings. Nada de publicidad de terceros."><Row t="Recibir avisos de teca por mail" toggle={!optOut} onClick={toggleMail} /></Group>
         <Group t="Tus datos"><Row t="Descargar una copia de mis datos" onClick={download} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /></Group>
-        <div style={{ marginTop: 20, textAlign: 'center' }}><a href="mailto:[TU MAIL]?subject=Eliminar%20mi%20cuenta%20de%20teca" style={{ fontWeight: 800, fontSize: 15, color: '#B3261E' }}>Eliminar mi cuenta</a></div>
+        <div style={{ marginTop: 20, textAlign: 'center' }}><a href="mailto:contactoappteca@gmail.com?subject=Eliminar%20mi%20cuenta%20de%20teca" style={{ fontWeight: 800, fontSize: 15, color: '#B3261E' }}>Eliminar mi cuenta</a></div>
       </div>
     </div>
   )
 }
 
 export const POLICY = [
-  ['Qué es teca', 'teca es un proyecto personal y sin fines comerciales, pensado para compartir recomendaciones de libros, películas y series entre amigos. Para cualquier consulta podés escribir a [TU MAIL].'],
-  ['Qué datos se guardan', 'Tu nombre, tu nombre de usuario, tu correo electrónico y, si querés, una foto de perfil. También lo que cargás en la aplicación: títulos, estrellas y reseñas.'],
-  ['Para qué se usan', 'Únicamente para que la aplicación funcione: mostrar tus estantes, que tus amigos puedan verlos, armar el ranking y calcular tus tecoins.'],
-  ['Avisos de teca', 'Al crear tu cuenta aceptás que usemos tu mail para mandarte avisos de teca, como novedades, rankings o actividades especiales. Si activás las notificaciones en tu celu, también pueden llegarte por ahí. No son publicidad de terceros. Podés darte de baja de los mails desde Ajustes › Privacidad y apagar las notificaciones desde Ajustes o desde tu celu.'],
-  ['Lo que nunca se hace con tus datos', 'No se venden, no se comparten con terceros con fines comerciales, no se usan para publicidad y no se utilizan para ningún otro fin. Quien administra teca no usa la información de los usuarios para nada que no sea el funcionamiento de la aplicación.'],
-  ['Quién puede ver lo que cargás', 'Tus estantes y reseñas los ven solo tus amigos, salvo que elijas que tu teca sea pública. En el ranking general aparecen únicamente tu nombre de usuario, tu foto y la cantidad de títulos que cargaste, y podés ocultarte desde Ajustes.'],
-  ['Dónde se guardan', 'En los servidores de Supabase, el servicio que aloja la aplicación, con conexión cifrada. Para encontrar tapas y afiches se consultan bases de datos públicas de libros y películas, sin enviar ningún dato tuyo.'],
-  ['Tus derechos', 'Podés pedir ver, corregir o borrar tus datos en cualquier momento escribiendo a [TU MAIL]. Los pedidos para ver tus datos se responden dentro de los diez días corridos y los de corrección o borrado, dentro de los cinco días hábiles, como indica la Ley N° 25.326 de Protección de los Datos Personales.'],
-  ['Órgano de control', 'LA AGENCIA DE ACCESO A LA INFORMACIÓN PÚBLICA, en su carácter de Órgano de Control de la Ley N° 25.326, tiene la atribución de atender las denuncias y reclamos que interpongan quienes resulten afectados en sus derechos por incumplimiento de las normas vigentes en materia de protección de datos personales.'],
-  ['Cambios', 'Si esta política cambia, se va a avisar dentro de la aplicación.'],
+  ['Quién es responsable', 'Los datos los administra Camila Manucci, con domicilio en CABA, Buenos Aires, Argentina. Para cualquier consulta, pedido o queja podés escribir a contactoappteca@gmail.com.'],
+  ['Qué datos guardamos', 'Tu nombre, tu usuario, tu correo, tu foto y tus colores de perfil si los elegís. Lo que cargás en teca: títulos, estrellas, reseñas, tus amigos, tus tecoins y tus decoraciones. Si lo completás, también tu rango de edad y tu provincia y ciudad. Y los datos técnicos necesarios para mandarte avisos al celu, si los activás.'],
+  ['Para qué los usamos', 'Para que teca funcione: mostrar tus estantes, que tus amigos los vean según lo que elijas, armar el ranking, calcular tus tecoins y mandarte los avisos que activaste.'],
+  ['Cuánto tiempo los guardamos', 'Mientras tengas la cuenta. Si la borrás, eliminamos tus datos dentro de los cinco días hábiles, salvo lo que la ley nos obligue a conservar.'],
+  ['Quién procesa los datos', 'Usamos servicios de terceros para que teca funcione: Supabase (base de datos y acceso) y Vercel (hosting). Para mostrar tapas y afiches consultamos bases públicas de libros y películas (Google Books, Open Library, TMDB e iTunes), sin enviarles tus datos personales.'],
+  ['Datos agregados para marcas', 'Cuando teca tenga marcas que la apoyen, podemos mostrarles números generales, por ejemplo cuántas personas de una ciudad o de un rango de edad usan teca. Nunca les mostramos datos de una persona en particular ni su correo.'],
+  ['Lo que no hacemos', 'No vendemos tus datos y no los compartimos con terceros para que hagan publicidad con ellos. No usamos tus datos para nada distinto de lo que dice esta política.'],
+  ['Quién puede ver lo que cargás', 'Tus estantes y reseñas los ven tus amigos, salvo que elijas que tu teca sea pública. En el ranking general aparecen tu nombre de usuario, tu foto y la cantidad de títulos. Podés ocultarte desde Ajustes.'],
+  ['Avisos', 'Los mails de la cuenta, como confirmar el alta o recuperar la contraseña, son parte del servicio. Los mails de novedades solo te llegan si los aceptaste, y podés darte de baja cuando quieras desde Ajustes › Privacidad o con el link que trae cada mail.'],
+  ['Cookies y almacenamiento', 'teca guarda en tu navegador lo mínimo para funcionar: tu sesión y algunas preferencias, como saber si ya viste el tutorial. No usamos cookies de publicidad.'],
+  ['Menores', 'teca es para mayores de 16 años. Si detectamos datos de alguien menor de esa edad, los borramos.'],
+  ['Tus derechos', 'Podés pedir ver, corregir o borrar tus datos en cualquier momento escribiendo a contactoappteca@gmail.com. Los pedidos de acceso se responden dentro de los diez días corridos, y los de corrección o borrado dentro de los cinco días hábiles, según la Ley N° 25.326 de Protección de los Datos Personales.'],
+  ['Órgano de control', 'La Agencia de Acceso a la Información Pública, en su carácter de órgano de control de la Ley N° 25.326, atiende las denuncias y reclamos por incumplimiento de esa ley.'],
+  ['Cambios', 'Si esta política cambia, te avisamos dentro de la app antes de que el cambio tenga efecto.'],
 ]
 export function PolicyBody() {
   return (
     <div className="pad" style={{ paddingBottom: 40 }}>
       <h1 className="h" style={{ fontSize: 28, marginTop: 6 }}>Política de privacidad</h1>
-      <div style={{ marginTop: 12, padding: '14px 16px', background: 'var(--lim)', borderRadius: 16, fontWeight: 800, fontSize: 15, lineHeight: 1.35 }}>Tus datos se usan solo para que teca funcione. No se venden, no se comparten y no se usan para nada más.</div>
+      <div style={{ marginTop: 12, padding: '14px 16px', background: 'var(--lim)', borderRadius: 16, fontWeight: 800, fontSize: 15, lineHeight: 1.35 }}>Tus datos se usan solo para que teca funcione. No se venden ni se usan para publicidad de terceros.</div>
       {POLICY.map(([t, x], i) => <div key={t} style={{ marginTop: 18 }}><div style={{ fontWeight: 800, fontSize: 15 }}>{i + 1}. {t}</div><p style={{ margin: '5px 0 0', fontWeight: 300, fontSize: 13.5, lineHeight: 1.5 }}>{x}</p></div>)}
     </div>
   )
 }
 export function Policy({ ctx }) { return <div><Back onBack={ctx.back} title="Política de privacidad" /><PolicyBody /></div> }
+
+export const TERMS = [
+  ['Quiénes somos y qué regulan estos términos', 'teca es una app para registrar libros, películas y series en estanterías y compartirlos con amigos. La opera Camila Manucci, con domicilio en CABA, Buenos Aires, Argentina. Al crear una cuenta o usar teca aceptás estos términos y la política de privacidad.'],
+  ['Qué es teca', 'Podés puntuar y reseñar lo que leés o mirás, armar tu estante, ver el feed de tus amigos, guardar cosas para después, ver el ranking, sumar tecoins y decorar tu estante. Podemos cambiar, agregar o quitar funciones. Si quitamos algo importante, te avisamos con anticipación razonable.'],
+  ['Tu cuenta', 'Tenés que ser mayor de 16 años para usar teca. Tenés que dar datos verdaderos, tener un solo usuario y cuidar tu contraseña. Sos responsable de lo que se haga desde tu cuenta. Si notás que alguien la usa sin tu permiso, escribinos.'],
+  ['Lo que cargás', 'Títulos, estrellas, reseñas, listas, tu foto y tus datos de perfil son tuyos. Lo que compartís se ve según lo que elijas: amigos o público. Para que teca funcione, nos das permiso, no exclusivo y gratuito, para guardarlo, mostrarlo dentro de la app a quien corresponda y procesarlo (por ejemplo, para el ranking). No lo usamos para publicidad de terceros. Si borrás algo, deja de mostrarse; las copias de respaldo se borran en un plazo razonable.'],
+  ['Cómo usar teca', 'Usá teca con respeto. No podés publicar contenido ofensivo, discriminatorio, violento, sexual o que incite al odio. Tampoco hacerte pasar por otra persona, hacer spam, tener varias cuentas para sumar tecoins o subir en el ranking, ni copiar reseñas o fotos de otros sin permiso. Y no podés intentar romper, copiar o forzar la app.'],
+  ['Moderación', 'Si algo infringe estos términos, podemos ocultarlo, borrarlo o suspender la cuenta. Podés reportar contenido escribiendo a contactoappteca@gmail.com. Cuando sea posible, te avisamos el motivo.'],
+  ['Tecoins y decoraciones', 'Las tecoins son una moneda virtual de teca. Se ganan usando la app, por ejemplo cuando alguien guarda algo tuyo, y se gastan en decoraciones y otras funciones. No tienen valor en dinero, no se pueden cambiar por dinero ni transferir a otra persona. Podemos cambiar cómo se ganan y cómo se gastan, con aviso previo.'],
+  ['Beta', 'teca está en beta. Puede haber fallas, cambios frecuentes y, en casos excepcionales, pérdida de datos. Hacemos lo posible por evitarlo, pero no garantizamos que nada se pierda. No uses teca para guardar nada que no puedas perder.'],
+  ['Disponibilidad', 'Hacemos lo posible para que teca esté disponible, pero no garantizamos que funcione sin interrupciones. Puede haber mantenimientos o cortes ajenos a nosotros.'],
+  ['Propiedad intelectual', 'teca, su diseño, sus decoraciones, sus textos y su código son de Camila Manucci. El nombre teca está en trámite de registro como marca ante el INPI (solicitud presentada el 20/11/2026, pendiente de otorgamiento). Las portadas, afiches y datos de libros y películas pertenecen a sus titulares. Los mostramos a partir de bases públicas (Google Books, Open Library, TMDB e iTunes). Si sos titular de algo y querés que lo quitemos, escribinos.'],
+  ['Licencia de uso', 'Te damos una licencia personal, limitada, revocable y no transferible para usar teca sin fines comerciales. No podés copiar la app, modificarla, hacer ingeniería inversa ni extraer datos de forma automática.'],
+  ['Servicios de terceros', 'teca usa servicios de terceros para funcionar, como Supabase, Vercel, Google (para el ingreso con Google), las bases de libros y películas y las notificaciones del celu. Sus propios términos también se aplican cuando los usás.'],
+  ['Responsabilidad', 'No nos responsabilizamos por lo que escriben otros usuarios ni por daños indirectos, en la medida que la ley lo permita. Esto no afecta los derechos que te reconoce la ley de defensa del consumidor.'],
+  ['Baja de la cuenta', 'Podés borrar tu cuenta desde Ajustes cuando quieras. Eliminamos tus datos según lo que dice la política de privacidad. Podemos suspender o cerrar cuentas que incumplan estos términos; si lo hacemos sin una causa grave, te avisamos antes.'],
+  ['Cambios en estos términos', 'Si cambiamos estos términos, te avisamos dentro de la app antes de que rijan. Si no estás de acuerdo, podés borrar tu cuenta.'],
+  ['Ley aplicable y jurisdicción', 'Estos términos se rigen por las leyes argentinas. Para cualquier conflicto, son competentes los tribunales de la Ciudad Autónoma de Buenos Aires, sin perjuicio de la elección de domicilio que la ley de defensa del consumidor le reconoce a la persona usuaria.'],
+  ['Contacto', 'Camila Manucci, CABA, Buenos Aires, Argentina. Para consultas, reclamos o reportes: contactoappteca@gmail.com.'],
+]
+export function TermsBody() {
+  return (
+    <div className="pad" style={{ paddingBottom: 40 }}>
+      <h1 className="h" style={{ fontSize: 28, marginTop: 6 }}>Términos y condiciones</h1>
+      <div style={{ marginTop: 12, padding: '14px 16px', background: 'var(--lim)', borderRadius: 16, fontWeight: 800, fontSize: 15, lineHeight: 1.35 }}>Sé respetuoso, tu contenido es tuyo y las tecoins no son plata.</div>
+      <p style={{ margin: '14px 0 0', fontWeight: 300, fontSize: 12.5, color: 'var(--gris)' }}>Última actualización: 25 de noviembre de 2026</p>
+      {TERMS.map(([t, x], i) => <div key={t} style={{ marginTop: 18 }}><div style={{ fontWeight: 800, fontSize: 15 }}>{i + 1}. {t}</div><p style={{ margin: '5px 0 0', fontWeight: 300, fontSize: 13.5, lineHeight: 1.5 }}>{x}</p></div>)}
+      <p style={{ marginTop: 22, fontWeight: 300, fontSize: 12.5 }}>Mirá también la <a href="/privacidad" style={{ fontWeight: 800 }}>política de privacidad</a>.</p>
+    </div>
+  )
+}
+export function Terms({ ctx }) { return <div><Back onBack={ctx.back} title="Términos y condiciones" /><TermsBody /></div> }
 
 function TRow({ t, sub, n, plus }) {
   return (

@@ -62,6 +62,7 @@ export default function Landing({ onEnter }) {
     if (!a) return
     if (a === 'up' || a === 'in') onEnter(a)
     else if (a === 'priv') location.href = '/privacidad'
+    else if (a === 'terms') location.href = '/terminos'
     else {
       const txt = a === 'how' ? 'Así de simple.' : 'Hacela'
       const el = [...box.current.querySelectorAll('div')].find((d) => d.children.length < 3 && d.textContent.trim().startsWith(txt))
