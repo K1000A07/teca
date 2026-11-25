@@ -167,12 +167,12 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
           {avatar && <button type="button" className="linkbtn" style={{ marginTop: 8, fontWeight: 300 }} onClick={() => setAvatar(null)}>Sacar foto</button>}</div>
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={upload} />
       </div>
-      <label className="field"><span className="light">Nombre</span><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Cami" /></label>
-      <label className="field"><span className="light">Usuario · así te encuentran tus amigos</span><input className="input" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="cami" autoCapitalize="none" /></label>
+      <label className="field"><span className="light">Nombre</span><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" /></label>
+      <label className="field"><span className="light">Usuario · así te encuentran tus amigos</span><input className="input ph-soft" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="usuario" autoCapitalize="none" /></label>
       {!avatar && <div className="field"><span className="light">O elegí un emoji</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>{EMOJIS.map((e) => <button type="button" key={e} onClick={() => setEmoji(emoji === e ? null : e)} style={{ aspectRatio: 1, borderRadius: 11, border: 0, background: emoji === e ? 'var(--lim)' : 'var(--cell)', boxShadow: emoji === e ? 'inset 0 0 0 1.5px var(--ink)' : 'none', fontSize: 19 }}>{e}</button>)}</div></div>}
-      <div className="field"><span className="light">Color</span>
-        <div className="row">{COLORS.map((c) => <button type="button" key={c} aria-label={`Color ${c}`} onClick={() => setColor(c)} style={{ width: 30, height: 30, borderRadius: '50%', border: 0, background: c, boxShadow: color === c ? '0 0 0 2px #fff, 0 0 0 4px #141210' : 'inset 0 0 0 1px rgba(0,0,0,.08)' }} />)}</div></div>
+      {!avatar && <div className="field"><span className="light">Color</span>
+        <div className="row">{COLORS.map((c) => <button type="button" key={c} aria-label={`Color ${c}`} onClick={() => setColor(c)} style={{ width: 30, height: 30, borderRadius: '50%', border: 0, background: c, boxShadow: color === c ? '0 0 0 2px #fff, 0 0 0 4px #141210' : 'inset 0 0 0 1px rgba(0,0,0,.08)' }} />)}</div></div>}
       {err && <div className="err">{err}</div>}
       <div style={{ margin: '22px 0 30px' }}><button className="btn" disabled={busy}>{busy ? 'Un segundo…' : submitLabel}</button></div>
     </form>

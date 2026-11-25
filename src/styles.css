@@ -152,3 +152,4 @@ textarea.input { font-weight: 300; font-size: 15px; line-height: 1.45; min-heigh
   .legal-body .pad { padding: 0; }
   .legal-body .h { font-size: 40px !important; }
 }
+.ph-soft::placeholder { opacity: .5; }

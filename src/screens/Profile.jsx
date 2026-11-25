@@ -73,7 +73,20 @@ function Row({ t, v, onClick, toggle }) {
 }
 const Group = ({ t, children, note }) => <div style={{ marginTop: 18 }}><div className="light">{t}</div><div style={{ marginTop: 4 }}>{children}</div>{note && <p style={{ margin: '8px 0 0', fontWeight: 300, fontSize: 12.5, lineHeight: 1.4, color: 'var(--gris)' }}>{note}</p>}</div>
 
+async function borrarCuenta_(ctx) {
+  if (!confirm('¿Borrar tu cuenta? Se pierden tus estantes, reseñas, amigos y tecoins. No se puede deshacer.')) return
+  try {
+    const uid = ctx.session.user.id
+    const { data: files } = await sb.storage.from('avatars').list(uid)
+    if (files?.length) await sb.storage.from('avatars').remove(files.map((f) => `${uid}/${f.name}`))
+    const { error } = await sb.rpc('borrar_mi_cuenta')
+    if (error) throw error
+    await sb.auth.signOut()
+  } catch { ctx.say('No se pudo borrar la cuenta. Probá de nuevo.') }
+}
+
 export function Settings({ ctx }) {
+  const borrarCuenta = () => borrarCuenta_(ctx)
   const [push, setPush] = useState(null)
   useEffect(() => { pushStatus().then(setPush) }, [])
   async function togglePush() {
@@ -94,7 +107,7 @@ export function Settings({ ctx }) {
     <div>
       <Back onBack={ctx.back} title="Ajustes" />
       <div className="pad">
-        <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /><Row t="Edad y lugar" onClick={() => ctx.go('about')} /></Group>
+        <Group t="Cuenta"><Row t="Mail" v={ctx.session.user.email} /><Row t="Usuario" v={'@' + ctx.profile.username} onClick={() => ctx.go('editprofile')} /><Row t="Edad y lugar" onClick={() => ctx.go('about')} /><Row t="Borrar mi cuenta" onClick={borrarCuenta} /></Group>
         <Group t="Privacidad"><Row t="Quién ve qué" v={ctx.profile.teca_public ? 'Todos' : 'Amigos'} onClick={() => ctx.go('privacy')} /><Row t="Política de privacidad" onClick={() => ctx.go('policy')} /><Row t="Términos y condiciones" onClick={() => ctx.go('terms')} /></Group>
         <Group t="Tu teca"><Row t="La que se ve primero" v={TECAS[Math.max(0, curT)][1]} onClick={cycleTeca} /></Group>
         <Group t="La app"><Row t="Notificaciones en el celu" toggle={push === 'on'} onClick={togglePush} /><Row t="Instalar en tu celu" onClick={() => ctx.go('install')} /><Row t="Ver el tutorial de nuevo" onClick={ctx.startTour} /><Row t="Cómo se suman tecoins" onClick={() => ctx.go('tecoins')} /></Group>
