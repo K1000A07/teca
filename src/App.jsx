@@ -159,8 +159,14 @@ export default function App() {
   useEffect(() => { if (!pickedTeca.current && profile && items.length) { pickedTeca.current = true; setTeca(firstTeca(items, profile.default_teca)) } }, [items, profile])
   const ctx = { uid, session, profile, setProfile, items, setItems, friends, friendships, people, incoming, feed, saved, setSaved, coins, go, back, tab, arrange, arrangeReq, clearArrange, say, reload: loadAll, reloadProfile: loadProfile, openSheet: setSheet, teca, setTeca, hasNews, startTour, decos, setDecos, setHideNav, setSpent, refs, saveRewards }
 
-  if (location.pathname === '/privacidad') return <div className="app"><div className="back"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><PolicyBody /></div>
-  if (location.pathname === '/terminos') return <div className="app"><div className="back"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div><TermsBody /></div>
+  if (location.pathname === '/privacidad' || location.pathname === '/terminos') {
+    const legal = location.pathname === '/terminos' ? <TermsBody /> : <PolicyBody />
+    return <div className="app legal-page">
+      <div className="back back-mob"><a href="/app" className="iconbtn dark" aria-label="Volver" style={{ color: '#fff', textDecoration: 'none' }}>‹</a><div className="title">teca</div></div>
+      <div className="legal-head-web"><a href="/" className="legal-wordmark">teca</a><a href="/" className="legal-back">Volver a teca</a></div>
+      <div className="legal-body">{legal}</div>
+    </div>
+  }
   const isAdminPage = location.pathname.startsWith('/admin')
   if (isAdminPage && session !== undefined && !(session && profile === undefined)) return session ? <><AdminApp session={session} profile={profile} say={say} /><Toast msg={toast} /></> : <div className="app"><Login say={say} /><Toast msg={toast} /></div>
   if (landingOK) return <Landing onEnter={(m) => location.assign('/app' + (m ? '?m=' + m : ''))} />
