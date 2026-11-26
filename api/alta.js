@@ -34,9 +34,9 @@ export default async function handler(req, res) {
   const headers = { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' }
   const out = { welcome: false, lista: false }
 
-  // Mail de bienvenida
+  // Mail de bienvenida: APAGADO hasta que se defina con BREVO_WELCOME=on en Vercel
   const sender = process.env.BREVO_SENDER_EMAIL || 'no-responder@appteca.com.ar'
-  try {
+  if (process.env.BREVO_WELCOME === 'on') try {
     const w = await fetch(`${BREVO}/smtp/email`, {
       method: 'POST', headers,
       body: JSON.stringify({ sender: { name: 'teca', email: sender }, to: [{ email, name: profile?.name || undefined }], replyTo: { email: 'contactoappteca@gmail.com', name: 'teca' }, subject: '¡Bienvenida a teca!', htmlContent: WELCOME(name) }),
