@@ -158,6 +158,10 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
     setBusy(false)
     if (error) return setErr(error.code === '23505' ? 'Ese usuario ya existe. Probá otro.' : 'No se pudo guardar. ' + error.message)
     if (!deferSet) ctx.setProfile(data)
+    if (!initial) {
+      // Mail de bienvenida y alta en la lista de novedades (sin frenar si falla)
+      sb.auth.getSession().then(({ data: s }) => s.session && fetch('/api/alta', { method: 'POST', headers: { Authorization: `Bearer ${s.session.access_token}` } })).catch(() => {})
+    }
     onDone?.(data)
   }
   const preview = { name, username, emoji: avatar ? null : emoji, color, avatar_url: avatar }
