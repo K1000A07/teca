@@ -49,3 +49,16 @@ Claves: la publishable key de Supabase y la clave pública VAPID están en el c�
 - Ideas con fecha: decos de Navidad (8/12), tu año en teca / top 3 (15/12), la caja 2026 al pasar de año (1/1), prode de los Oscar, Feria del Libro, Día del Libro, Día del Amigo, Halloween.
 - Para programar después: (1) panel de banners de marcas en /admin (subir JPG, marca, link, ubicación, fecha de inicio/fin, frecuencia, pausar, vistas y toques por banner; tabla nueva + bucket de Storage; reutiliza ad_impressions). (2) Sección "Marcas" en la landing ("Tu marca en teca", próximamente, "¿Querés aparecer en teca? Escribinos", más una línea de Empresas); falta definir mail o WhatsApp de contacto. (3) Teca para empresas (club privado de la empresa, premios propios, reporte agregado): a definir, ver conversación.
 - Ideas sin fecha: compartir la teca en historias, clubes de lectura, escanear código de barras, Biblioteca Nacional de España como fuente de libros, aviso cuando un amigo termina algo que guardaste, desafío de lectura del año.
+
+## Equipo y flujo de trabajo
+Quien lee esto en la sesión principal es la coordinadora. Los especialistas están en `.claude/agents/`: diseno, programacion, contenido y comercial. Cami solo corrige y da ok; no tiene que copiar ni pasar cosas a mano.
+
+Flujo por defecto para un pedido que toca la app (ej. "necesito un mail"):
+1. La coordinadora entiende el pedido y se lo pasa al agente de **diseno** (o **contenido** si es solo texto).
+2. Muestra el resultado a Cami (imagen o vista previa) y espera su ok. Si corrige, vuelve al paso 1.
+3. Con el ok, pasa el trabajo a **programacion** con lo aprobado.
+4. Revisa lo que entregó programacion (build, que se vea como se aprobó) y le cuenta a Cami en pocas líneas.
+5. Subir a main (push) y cualquier cosa que se publique o envíe a otras personas: solo con el ok de Cami.
+
+Tareas comerciales: **comercial** redacta, **diseno** arma lo visual, Cami aprueba, y recién ahí se envía.
+Si un agente devuelve una duda, la coordinadora se la pasa a Cami en una sola pregunta clara.
