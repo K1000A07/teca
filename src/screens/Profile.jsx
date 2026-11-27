@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
+import { BIO_ON } from '../flags.js'
 import { Avatar, Back, Coin, CoinPill, Cover, Icon, Sheet } from '../ui.jsx'
 import { COINS, KINDS } from '../lib.js'
 import { ProfileForm } from './Auth.jsx'
@@ -23,6 +24,7 @@ export function Profile({ ctx }) {
           <div className="light" style={{ marginTop: 4, letterSpacing: '.1em' }}>@{ctx.profile.username}</div>
           <button className="chip" style={{ marginTop: 8 }} onClick={() => ctx.go('editprofile')}>Editar perfil</button></div>
       </div>
+      {BIO_ON && ctx.profile.bio && <p className="pad body" style={{ margin: '12px 0 0', fontSize: 15, lineHeight: 1.4 }}>{ctx.profile.bio}</p>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, margin: '18px 20px 0' }}>
         {[['book', '#A9C6F2'], ['movie', '#E6F04A'], ['show', '#E3EDFB']].map(([k, bg]) => (
           <button key={k} onClick={() => { ctx.setTeca(k); ctx.tab('lib') }} style={{ border: 0, background: bg, padding: '12px 8px', textAlign: 'center', borderRadius: 16 }}>

@@ -692,3 +692,11 @@ alter table public.profiles add column if not exists terms_at timestamptz;
 alter table public.profiles add column if not exists news_consent boolean not null default false;
 alter table public.profiles add column if not exists news_at timestamptz;
 grant insert (terms_at, news_consent, news_at) on public.profiles to authenticated;
+
+-- 27: descripción del perfil
+-- Descripción del perfil (estilo Instagram), hasta 150 caracteres. Opcional.
+alter table public.profiles add column if not exists bio text;
+alter table public.profiles drop constraint if exists profiles_bio_len;
+alter table public.profiles add constraint profiles_bio_len check (bio is null or char_length(bio) <= 150);
+grant insert (bio) on public.profiles to authenticated;
+grant update (bio) on public.profiles to authenticated;

@@ -1,3 +1,4 @@
+import { BIO_ON } from '../flags.js'
 import { BrowseBar, ListView, useBrowse, firstTeca } from '../browse.jsx'
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
@@ -162,6 +163,7 @@ export function FriendTeca({ ctx, person: initial }) {
         <div><div className="h" style={{ fontSize: 28 }}>La <span className="teca">teca</span> de {person.name}</div>
           <div className="light" style={{ marginTop: 6 }}>@{person.username}{canSee && items ? ` · ${items.length} títulos · ${common} en común` : ''}</div></div>
       </div>
+      {BIO_ON && person.bio && <p className="pad body" style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.4 }}>{person.bio}</p>}
       {action && <div className="pad" style={{ marginTop: 10 }}>{action}</div>}
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />

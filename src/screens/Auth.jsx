@@ -1,3 +1,4 @@
+import { BIO_ON } from '../flags.js'
 import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 import { Avatar, Back, Icon } from '../ui.jsx'
@@ -124,6 +125,7 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
   const [emoji, setEmoji] = useState(initial?.emoji || null)
   const [color, setColor] = useState(initial?.color || COLORS[0])
   const [avatar, setAvatar] = useState(initial?.avatar_url || null)
+  const [bio, setBio] = useState(initial?.bio || '')
   const [terms, setTerms] = useState(false)
   const [news, setNews] = useState(false)
   const [err, setErr] = useState('')
@@ -151,7 +153,7 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
     setBusy(true)
     const now = new Date().toISOString()
     const consent = initial ? {} : { terms_at: now, news_consent: news, news_at: news ? now : null }
-    const row = { username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar, ...consent }
+    const row = { username: u, name: name.trim(), emoji: avatar ? null : emoji, color, avatar_url: avatar, ...(BIO_ON ? { bio: bio.trim() || null } : {}), ...consent }
     const { data, error } = initial
       ? await sb.from('profiles').update(row).eq('id', ctx.uid).select().single()
       : await sb.from('profiles').insert({ id: ctx.uid, ...row }).select().single()
@@ -178,6 +180,7 @@ export function ProfileForm({ ctx, initial, onDone, submitLabel, deferSet }) {
       </div>
       <label className="field"><span className="light">Nombre</span><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" /></label>
       <label className="field"><span className="light">Usuario · así te encuentran tus amigos</span><input className="input ph-soft" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="usuario" autoCapitalize="none" /></label>
+      {BIO_ON && <label className="field"><span className="light">Descripción · opcional</span><textarea className="input ph-soft" rows={3} maxLength={150} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Leo de noche, miro pelis de a dos" style={{ resize: 'none' }} /><span className="light" style={{ textAlign: 'right', marginTop: 4 }}>{bio.length}/150</span></label>}
       {!avatar && <div className="field"><span className="light">O elegí un emoji</span>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6 }}>{EMOJIS.map((e) => <button type="button" key={e} onClick={() => setEmoji(emoji === e ? null : e)} style={{ aspectRatio: 1, borderRadius: 11, border: 0, background: emoji === e ? 'var(--lim)' : 'var(--cell)', boxShadow: emoji === e ? 'inset 0 0 0 1.5px var(--ink)' : 'none', fontSize: 19 }}>{e}</button>)}</div></div>}
       {!avatar && <div className="field"><span className="light">Color</span>
