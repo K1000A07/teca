@@ -25,8 +25,8 @@ export default async function handler(req, res) {
 <meta property="og:site_name" content="teca">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${origin}/og.jpg">
-<meta property="og:image:secure_url" content="${origin}/og.jpg">
+<meta property="og:image" content="${origin}/og.jpg?v=2">
+<meta property="og:image:secure_url" content="${origin}/og.jpg?v=2">
 <meta property="og:image:type" content="image/jpeg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">

@@ -7,7 +7,7 @@ import { Steps, VisibilityStep } from './About.jsx'
 export function Intro() {
   return (
     <div className="splash">
-      <img src="/splash.jpg" alt="" />
+      <img src="/splash.jpg?v=2" alt="" />
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(10,14,20,.3), rgba(10,14,20,.05) 45%, rgba(10,14,20,.35))' }} />
       <div className="word">teca</div>
     </div>
