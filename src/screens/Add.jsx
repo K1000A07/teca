@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { sb } from '../supabase.js'
 import { useImpression } from '../track.js'
 import { Coin, Cover, Icon, Sheet, Stars } from '../ui.jsx'
+import { buzz, confetti } from '../fx.js'
 import { GENRES, KINDS, KIND_ORDER, PLATFORMS, coinsFor, genreList, searchTitles } from '../lib.js'
 
 async function shrinkKeep(file, max) {
@@ -78,6 +79,8 @@ export function AddSheet({ ctx, onClose, edit, prefill }) {
     ctx.setTeca(kind)
     if (edit) { ctx.say('Listo, guardado'); onClose() } else setDone(res.data)
   }
+
+  useEffect(() => { if (done) { buzz([20, 40, 20]); const t = setTimeout(() => confetti(), 350); return () => clearTimeout(t) } }, [done])
 
   if (done) return (
     <Sheet onClose={onClose}>

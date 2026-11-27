@@ -3,6 +3,7 @@ import { paletteFor, spineSize, PPC } from './lib.js'
 import { AsteriskMark } from './ui.jsx'
 import { DecoArt, SHELF_STYLES, decoSize } from './decos.jsx'
 import { Dust } from './dust.jsx'
+import { buzz } from './fx.js'
 
 const decoW = (kind) => Math.round(decoSize(kind).w)
 const spineW = (it) => Math.round(spineSize(it).wcm * PPC * 2.2)
@@ -144,7 +145,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, pac
     if (e.button && e.button !== 0) return
     const r = e.currentTarget.getBoundingClientRect()
     const s = { eid, blockKey, x: e.clientX, y: e.clientY, offX: e.clientX - r.left, moved: false, timer: null }
-    if (!editing) s.timer = setTimeout(() => { s.long = true; onLongPress?.(eid); navigator.vibrate?.(15) }, 450)
+    if (!editing) s.timer = setTimeout(() => { s.long = true; onLongPress?.(eid); buzz(20) }, 450)
     st.current = s
     const move = (ev) => {
       const d = st.current; if (!d) return
