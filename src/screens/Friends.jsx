@@ -1,4 +1,4 @@
-import { BIO_ON } from '../flags.js'
+import { BIO_ON, CONTEO_ON } from '../flags.js'
 import { BrowseBar, ListView, useBrowse, firstTeca } from '../browse.jsx'
 import { useEffect, useState } from 'react'
 import { sb } from '../supabase.js'
@@ -130,7 +130,7 @@ export function FriendTeca({ ctx, person: initial }) {
   const isFriend = rel?.status === 'accepted'
   useEffect(() => {
     sb.from('profiles').select('*').eq('id', initial.id).maybeSingle().then(({ data }) => data && setPerson(data))
-    if (BIO_ON) sb.rpc('profile_counts', { uid: initial.id }).then(({ data }) => data && setCounts(Object.fromEntries(data.map((r) => [r.kind, Number(r.n)]))))
+    if (CONTEO_ON) sb.rpc('profile_counts', { uid: initial.id }).then(({ data }) => data && setCounts(Object.fromEntries(data.map((r) => [r.kind, Number(r.n)]))))
     sb.from('user_decos').select('*').eq('user_id', initial.id).then(({ data }) => setDecos(data || []))
     Promise.all([
       sb.from('profiles').select('*').eq('id', initial.id).maybeSingle(),
@@ -163,10 +163,10 @@ export function FriendTeca({ ctx, person: initial }) {
       <div className="row pad" style={{ gap: 14, paddingBottom: 6 }}>
         <Avatar p={person} s={70} />
         <div><div className="h" style={{ fontSize: 28 }}>La <span className="teca">teca</span> de {person.name}</div>
-          <div className="light" style={{ marginTop: 6 }}>@{person.username}{!BIO_ON && canSee && items ? ` · ${items.length} títulos · ${common} en común` : ''}</div></div>
+          <div className="light" style={{ marginTop: 6 }}>@{person.username}{!counts && canSee && items ? ` · ${items.length} títulos · ${common} en común` : ''}</div></div>
       </div>
       {BIO_ON && person.bio && <p className="pad body" style={{ margin: '4px 0 0', fontSize: 15, lineHeight: 1.4 }}>{person.bio}</p>}
-      {BIO_ON && counts && <div className="pad row" style={{ gap: 8, marginTop: 12 }}>{['book', 'movie', 'show'].map((k) => <div key={k} style={{ flex: 1, background: 'var(--cell)', borderRadius: 14, padding: '8px 4px', textAlign: 'center' }}><div className="h" style={{ fontSize: 22 }}>{counts[k] || 0}</div><div className="light">{KINDS[k].plural}</div></div>)}</div>}
+      {CONTEO_ON && counts && <div className="pad row" style={{ gap: 8, marginTop: 12 }}>{['book', 'movie', 'show'].map((k) => <div key={k} style={{ flex: 1, background: 'var(--cell)', borderRadius: 14, padding: '8px 4px', textAlign: 'center' }}><div className="h" style={{ fontSize: 22 }}>{counts[k] || 0}</div><div className="light">{KINDS[k].plural}</div></div>)}</div>}
       {action && <div className="pad" style={{ marginTop: 10 }}>{action}</div>}
       {canSee ? (<>
         <TecaTabs kind={kind} setKind={setKind} />

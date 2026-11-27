@@ -701,6 +701,7 @@ alter table public.profiles add constraint profiles_bio_len check (bio is null o
 grant insert (bio) on public.profiles to authenticated;
 grant update (bio) on public.profiles to authenticated;
 
+-- 28: conteo de títulos en el perfil
 -- Cantidad de títulos por tipo de cualquier perfil (solo números, no los títulos), para mostrarla aunque la teca sea cerrada.
 create or replace function public.profile_counts(uid uuid)
 returns table(kind text, n bigint)
