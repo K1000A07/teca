@@ -225,7 +225,7 @@ export function Shelf({ entries, kind, width, styleName = 'madera', editing, pac
   const ent = (e, blockKey, children, style) => {
     const isDrag = drag?.eid === e.eid
     return (
-      <div key={e.eid} data-eid={e.eid} onPointerDown={(ev) => down(ev, e.eid, blockKey)} role="button" tabIndex={0} aria-label={e.type === 'item' ? e.ref.title : 'Decoración'}
+      <div key={e.eid} data-eid={e.eid} onContextMenu={(ev) => ev.preventDefault()} onPointerDown={(ev) => down(ev, e.eid, blockKey)} role="button" tabIndex={0} aria-label={e.type === 'item' ? e.ref.title : 'Decoración'}
         onKeyDown={(ev) => { if (ev.key === 'Enter') editing ? onSelect?.(e.eid) : e.type === 'item' && onOpen?.(e.ref) }}
         className={editing && !isDrag ? 'wiggle' : undefined}
         style={{ position: 'relative', flex: 'none', touchAction: editing ? 'none' : 'manipulation', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', cursor: editing ? (isDrag ? 'grabbing' : 'grab') : 'pointer',
